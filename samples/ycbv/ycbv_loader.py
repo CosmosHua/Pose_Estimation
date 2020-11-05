@@ -42,7 +42,7 @@ class YCBVDataset(utils.Dataset):
 
     def load_ycbv(self):
         class_names = self.get_class_names()
-        for class_id in range(1, len(class_names[1:])):
+        for class_id in range(1, len(class_names)):
             self.add_class('ycb', class_id, class_names[class_id])
         assert self.split in ['train', 'val']
         images = {}
