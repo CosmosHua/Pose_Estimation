@@ -69,15 +69,15 @@ elif init_with == "last":
 
 model.train(dataset_train, dataset_val, 
             learning_rate=config.LEARNING_RATE, 
-            epochs=5, 
+            epochs=1, 
             layers='heads')
 
-model.train(dataset_train, dataset_val,
-            learning_rate=config.LEARNING_RATE,
-            epochs=5,
-            layers='4+')
+#model.train(dataset_train, dataset_val,
+#            learning_rate=config.LEARNING_RATE,
+#            epochs=5,
+#            layers='4+')
 
 model.train(dataset_train, dataset_val, 
             learning_rate=config.LEARNING_RATE / 10,
-            epochs=10, 
+            epochs=2, 
             layers="all")

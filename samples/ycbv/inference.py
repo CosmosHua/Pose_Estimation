@@ -69,7 +69,7 @@ model = modellib.MaskRCNN(mode="inference",
 # Load trained weights
 #print("Loading weights from ", model_path)
 
-weights_path = '/gluster/home/sdevaramani/Thesis/refactor/logs/ycb20201105T1634/mask_rcnn_ycb_0010.h5'
+weights_path = '/gluster/home/sdevaramani/Thesis/refactor/logs/ycb20201105T1820/mask_rcnn_ycb_0002.h5'
 model.load_weights(weights_path, by_name=True)
 
 #model.load_weights(model_path, by_name=True)

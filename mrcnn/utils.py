@@ -31,6 +31,18 @@ COCO_MODEL_URL = "https://github.com/matterport/Mask_RCNN/releases/download/v2.0
 #  Bounding Boxes
 ############################################################
 
+def compute_box_coordinates(mask_image, threshold=12):
+    if len(mask_image.shape) == 2:
+        rows, cols = np.where(mask_image != 0)
+    else:
+        rows, cols = np.where(mask_image[:, :, -1]!=0)
+    x_min, y_min = np.min(rows) - threshold, np.min(cols) - threshold
+    x_max, y_max = np.max(rows) + threshold, np.max(cols) + threshold
+    #width, height = (x_max - x_min), (y_max - y_min)
+    coordinates = (y_min, x_min, y_max, x_max)
+    return coordinates
+
+
 def extract_bboxes(mask):
     """Compute bounding boxes from masks.
     mask: [height, width, num_instances]. Mask pixels are either 1 or 0.

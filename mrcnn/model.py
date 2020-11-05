@@ -11,6 +11,7 @@ import os
 import random
 import datetime
 import re
+import cv2
 import math
 import logging
 from collections import OrderedDict
@@ -1288,23 +1289,26 @@ def load_image_gt(dataset, config, image_id, augment=False, augmentation=None,
     # Note that some boxes might be all zeros if the corresponding mask got cropped out.
     # and here is to filter them out
     #_idx = np.sum(mask, axis=(0, 1)) > 0
-    _idx = []
-    for i in range(0, mask.shape[2], 3):
-        _idx.append((np.sum(mask[:, :, i:i+3], axis=(0, 1)) > 0)[0])
-    masks = []
-    for _id in _idx:
-        m_id = _id.astype(np.int32) * 3
-        masks.append(mask[:, :, m_id:m_id+3])
-    masks = np.stack(masks, axis=2)
-    H, W = mask.shape[0], mask.shape[1]
-    mask = np.reshape(masks, (H, W, 3*len(_idx)))
+    #_idx = []
+    #for i in range(0, mask.shape[2], 3):
+    #    _idx.append((np.sum(mask[:, :, i:i+3], axis=(0, 1)) > 0)[0])
+    #masks = []
+    #for _id in _idx:
+    #    m_id = _id.astype(np.int32) * 3
+    #    masks.append(mask[:, :, m_id:m_id+3])
+    #masks = np.stack(masks, axis=2)
+    #H, W = mask.shape[0], mask.shape[1]
+    #mask = np.reshape(masks, (H, W, 3*len(_idx)))
     #mask = mask[:, :, _idx]
-    class_ids = class_ids[_idx]
+    #class_ids = class_ids[_idx]
     # Bounding boxes. Note that some boxes might be all zeros
     # if the corresponding mask got cropped out.
     # bbox: [num_instances, (y1, x1, y2, x2)]
-    bbox = utils.extract_bboxes(mask)
-
+    if all(np.sum(mask, axis=(0, 1))>0):
+        boxes = []
+        for i in range(0, mask.shape[2], 3):
+            boxes.append(utils.compute_box_coordinates(mask[:, :, i:i+3]))
+        bbox = np.array(boxes)
     # Active classes
     # Different datasets have different classes, so track the
     # classes supported in the dataset of this image.
@@ -1314,7 +1318,8 @@ def load_image_gt(dataset, config, image_id, augment=False, augmentation=None,
 
     # Resize masks to smaller size to reduce memory usage
     if use_mini_mask:
-        mask = utils.minimize_mask(bbox, mask, config.MINI_MASK_SHAPE)
+        mask = cv2.resize(mask, config.MINI_MASK_SHAPE)
+        #mask = utils.minimize_mask(bbox, mask, config.MINI_MASK_SHAPE)
 
     # Image meta data
     image_meta = compose_image_meta(image_id, original_shape, image.shape,
