@@ -86,3 +86,17 @@ class YCBVDataset(utils.Dataset):
         class_ids = np.array(class_ids, dtype=np.int32)
         mask = np.stack(instance_masks, axis=2).astype(np.bool)
         return mask, class_ids
+
+    def load_rgb_mask(self, image_id):
+        image_masks = self.mask_files[str(image_id)]
+        instance_masks = []
+        class_ids = []
+        for class_id in list(image_masks.keys()):
+            bgr_mask = cv2.imread(image_masks[class_id])
+            rgb_mask = cv2.cvtColor(bgr_mask, cv2.COLOR_BGR2RGB)
+            instance_masks.append(rgb_mask)
+            class_ids.append(class_id)
+        class_ids = np.array(class_ids, dtype=np.int32)
+        mask = np.stack(instance_masks, axis=2)
+        mask = np.reshape(mask, (640, 640, 3 * len(class_ids)))
+        return mask, class_ids

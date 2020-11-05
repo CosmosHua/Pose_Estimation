@@ -12,7 +12,7 @@ import sys
 import random
 import itertools
 import colorsys
-
+import cv2
 import numpy as np
 from skimage.measure import find_contours
 import matplotlib.pyplot as plt
@@ -140,6 +140,7 @@ def display_instances(image, boxes, masks, class_ids, class_names,
             class_id = class_ids[i]
             score = scores[i] if scores is not None else None
             label = class_names[class_id]
+            print(label)
             caption = "{} {:.3f}".format(label, score) if score else label
         else:
             caption = captions[i]
@@ -163,6 +164,53 @@ def display_instances(image, boxes, masks, class_ids, class_names,
             p = Polygon(verts, facecolor="none", edgecolor=color)
             ax.add_patch(p)
     ax.imshow(masked_image.astype(np.uint8))
+    if auto_show:
+        plt.show()
+
+def display_rgb_instances(image, boxes, masks, class_ids, class_names,
+                      scores=None, title="",
+                      figsize=(16, 16), ax=None,
+                      show_mask=True, show_bbox=True,
+                      colors=None, captions=None):
+    # Number of instances
+    N = class_ids.shape[0]
+    auto_show = False
+    if not ax:
+        _, ax = plt.subplots(1, figsize=figsize)
+        auto_show = True
+    # Generate random colors
+    colors = colors or random_colors(N)
+    height, width = image.shape[:2]
+    ax.set_ylim(height + 10, -10)
+    ax.set_xlim(-10, width + 10)
+    ax.axis('off')
+    ax.set_title(title)
+
+    masked_image = image.copy()
+    for i in range(N):
+        color = colors[i]
+        if not np.any(boxes[i]):
+            continue
+        y1, x1, y2, x2 = boxes[i*3]
+        if show_bbox:
+            p = patches.Rectangle((x1, y1), x2 - x1, y2 - y1, linewidth=2,
+                                alpha=0.7, linestyle="dashed",
+                                edgecolor=color, facecolor='none')
+            ax.add_patch(p)
+        if not captions:
+            class_id = class_ids[i]
+            score = scores[i] if scores is not None else None
+            label = class_names[class_id]
+            caption = "{} {:.3f}".format(label, score) if score else label
+        else:
+            caption = captions[i]
+        ax.text(x1, y1 + 8, caption,
+                color='w', size=11, backgroundcolor="none")
+        
+        m_id = i * 3
+        mask = masks[:, :, m_id:m_id+3]
+        masked_image = cv2.add(masked_image, mask)
+    ax.imshow(masked_image)
     if auto_show:
         plt.show()
 
@@ -301,6 +349,29 @@ def display_top_masks(image, mask, class_ids, class_names, limit=4):
         titles.append(class_names[class_id] if class_id != -1 else "-")
     display_images(to_display, titles=titles, cols=limit + 1, cmap="Blues_r")
 
+def display_rgb_top_masks(image, mask, class_ids, class_names, limit=4):
+    """Display the given image and the top few class masks."""
+    to_display = []
+    titles = []
+    to_display.append(image)
+    titles.append("H x W={}x{}".format(image.shape[0], image.shape[1]))
+    # Pick top prominent classes in this image
+    unique_class_ids = np.unique(class_ids)
+    mask_area = [np.sum(mask[:, :, np.where(class_ids == i)[0]])
+                 for i in unique_class_ids]
+    top_ids = [v[0] for v in sorted(zip(unique_class_ids, mask_area),
+                                    key=lambda r: r[1], reverse=True) if v[1] > 0]
+    # Generate images and titles
+    for i in range(limit):
+        class_id = top_ids[i] if i < len(top_ids) else -1
+        m_id = np.where(class_ids == class_id)[0][0] * 3
+        m = mask[:, :, m_id:m_id+3]
+        # Pull masks of instances belonging to the same class.
+        # m = mask[:, :, np.where(class_ids == class_id)[0]]
+        # m = np.sum(m * np.arange(1, m.shape[-1] + 1), -1)
+        to_display.append(m)
+        titles.append(class_names[class_id] if class_id != -1 else "-")
+    display_images(to_display, titles=titles, cols=limit + 1, cmap="Blues_r")
 
 def plot_precision_recall(AP, precisions, recalls):
     """Draw the precision-recall curve.
