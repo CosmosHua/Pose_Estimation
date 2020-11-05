@@ -1,0 +1,23 @@
+Original Matterport MaskRCNN implementation:
+
+1) Dataset: shapes
+2) Conda env: old_tf in cluster
+3) Specification of env:
+	- tensorflow version 1.5
+	- downgrade numpy to 1.16.4
+	- Must have python version >= 3.7
+	- Keras version : upgrade from 2.0.8 to 2.1.4
+	- If it uses Theano backend, change it to tensorflow backend : In your folder where envs are stored, go to your environment and find the folder etc/conda/activate.d. Go to the file keras_activate.sh and change the back end appropriately.
+	- Initialize with coco weights and NOT imagenet weights
+
+
+Ported Matterport Mask RCNN implementation:
+
+1) Dataset: shapes
+2) Conda env in cluster: port_test
+3) Sepcification of env:
+	- tensorflow 2.1
+	- keras: 2.3.1
+	- numpy: 1.19.1 (default)
+	- python verison >= 3.7.8
+	- Initialized with coco weights
