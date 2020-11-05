@@ -256,7 +256,7 @@ class Dataset(object):
         self._image_ids = []
         self.image_info = []
         # Background is always the first class
-        self.class_info = [{"source": "", "id": 0, "name": "BG"}]
+        self.class_info = [{"source": "ycb", "id": 0, "name": "BG"}]
         self.source_class_ids = {}
 
     def add_class(self, source, class_id, class_name):

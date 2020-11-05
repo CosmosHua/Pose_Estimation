@@ -23,124 +23,66 @@ MODEL_DIR = os.path.join(ROOT_DIR, "logs")
 class YCBVDataset(utils.Dataset):
     """ Loads YCB-Video dataset for Mask RCNN training
     """
+    def __init__(self, data_dir, split=None, name='ycb'):
+        super(YCBVDataset, self).__init__()
+        self.data_dir = data_dir
+        self.split = split
+        self.name = name
+        self.mask_files = self.set_all_mask_files()
 
-    def load_shapes(self, count, height, width):
-        """Generate the requested number of synthetic images.
-        count: number of images to generate.
-        height, width: the size of the generated images.
-        """
-        # Add classes
-        self.add_class("shapes", 1, "square")
-        self.add_class("shapes", 2, "circle")
-        self.add_class("shapes", 3, "triangle")
+    def set_all_mask_files(self):
+        mask_files = {}
+        masks_dir = os.path.join(self.data_dir, self.split + '/mask')
+        for file in os.listdir(masks_dir):
+            mask_file = masks_dir + '/' + file
+            IMID, class_id = file.split('_')
+            class_id, _ = class_id.split('.')
+            mask_files.setdefault(IMID, {}).update({class_id: mask_file})
+        return mask_files
 
-        # Add images
-        # Generate random specifications of images (i.e. color and
-        # list of shapes sizes and locations). This is more compact than
-        # actual images. Images are generated on the fly in load_image().
-        for i in range(count):
-            bg_color, shapes = self.random_image(height, width)
-            self.add_image("shapes", image_id=i, path=None,
-                           width=width, height=height,
-                           bg_color=bg_color, shapes=shapes)
+    def load_ycbv(self):
+        class_names = self.get_class_names()
+        for class_id in range(1, len(class_names[1:])):
+            self.add_class('ycb', class_id, class_names[class_id])
+        assert self.split in ['train', 'val']
+        images = {}
+        images_dir = os.path.join(self.data_dir, self.split + '/rgb')
+        for filename in os.listdir(images_dir):
+            IMID, _ = filename.split('.')
+            images[IMID] = images_dir + '/' + filename
+        images = dict(sorted(images.items(), key=lambda x: x[1]))
+        for image_id in list(images.keys()):
+            self.add_image('ycb', image_id, path=images[image_id])
+        self.image_info = sorted(self.image_info, key=lambda k: int(k['id']))
 
-    def load_image(self, image_id):
-        """Generate an image from the specs of the given image ID.
-        Typically this function loads the image from a file, but
-        in this case it generates the image on the fly from the
-        specs in image_info.
-        """
-        info = self.image_info[image_id]
-        bg_color = np.array(info['bg_color']).reshape([1, 1, 3])
-        image = np.ones([info['height'], info['width'], 3], dtype=np.uint8)
-        image = image * bg_color.astype(np.uint8)
-        for shape, color, dims in info['shapes']:
-            image = self.draw_shape(image, shape, dims, color)
-        return image
+    def get_class_names(self):
+        class_names = ['background', '002_master_chef_can', '003_cracker_box',
+                       '004_sugar_box', '005_tomato_soup_can', '006_mustard_bottle',
+                       '007_tuna_fish_can', '008_pudding_box', '009_gelatin_box',
+                       '010_potted_meat_can', '011_banana', '019_pitcher_base',
+                       '021_bleach_cleanser', '024_bowl',
+                       '025_mug', '035_power_drill',
+                       '036_wood_block', '037_scissors',
+                       '040_large_marker', '051_large_clamp',
+                       '052_extra_large_clamp', '061_foam_brick']
+        return class_names
 
     def image_reference(self, image_id):
-        """Return the shapes data of the image."""
         info = self.image_info[image_id]
-        if info["source"] == "shapes":
-            return info["shapes"]
+        if info['source'] == 'ycb':
+            return info['ycb']
         else:
             super(self.__class__).image_reference(self, image_id)
 
     def load_mask(self, image_id):
-        """Generate instance masks for shapes of the given image ID.
-        """
-        info = self.image_info[image_id]
-        shapes = info['shapes']
-        count = len(shapes)
-        mask = np.zeros([info['height'], info['width'], count], dtype=np.uint8)
-        for i, (shape, _, dims) in enumerate(info['shapes']):
-            mask[:, :, i:i+1] = self.draw_shape(mask[:, :, i:i+1].copy(),
-                                                shape, dims, 1)
-        # Handle occlusions
-        occlusion = np.logical_not(mask[:, :, -1]).astype(np.uint8)
-        for i in range(count-2, -1, -1):
-            mask[:, :, i] = mask[:, :, i] * occlusion
-            occlusion = np.logical_and(occlusion, np.logical_not(mask[:, :, i]))
-        # Map class names to class IDs.
-        class_ids = np.array([self.class_names.index(s[0]) for s in shapes])
-        return mask.astype(np.bool), class_ids.astype(np.int32)
-
-    def draw_shape(self, image, shape, dims, color):
-        """Draws a shape from the given specs."""
-        # Get the center x, y and the size s
-        x, y, s = dims
-        if shape == 'square':
-            cv2.rectangle(image, (x-s, y-s), (x+s, y+s), color, -1)
-        elif shape == "circle":
-            cv2.circle(image, (x, y), s, color, -1)
-        elif shape == "triangle":
-            points = np.array([[(x, y-s),
-                                (x-s/math.sin(math.radians(60)), y+s),
-                                (x+s/math.sin(math.radians(60)), y+s),
-                                ]], dtype=np.int32)
-            cv2.fillPoly(image, points, color)
-        return image
-
-    def random_shape(self, height, width):
-        """Generates specifications of a random shape that lies within
-        the given height and width boundaries.
-        Returns a tuple of three valus:
-        * The shape name (square, circle, ...)
-        * Shape color: a tuple of 3 values, RGB.
-        * Shape dimensions: A tuple of values that define the shape size
-                            and location. Differs per shape type.
-        """
-        # Shape
-        shape = random.choice(["square", "circle", "triangle"])
-        # Color
-        color = tuple([random.randint(0, 255) for _ in range(3)])
-        # Center x, y
-        buffer = 20
-        y = random.randint(buffer, height - buffer - 1)
-        x = random.randint(buffer, width - buffer - 1)
-        # Size
-        s = random.randint(buffer, height//4)
-        return shape, color, (x, y, s)
-
-    def random_image(self, height, width):
-        """Creates random specifications of an image with multiple shapes.
-        Returns the background color of the image and a list of shape
-        specifications that can be used to draw the image.
-        """
-        # Pick random background color
-        bg_color = np.array([random.randint(0, 255) for _ in range(3)])
-        # Generate a few random shapes and record their
-        # bounding boxes
-        shapes = []
-        boxes = []
-        N = random.randint(1, 4)
-        for _ in range(N):
-            shape, color, dims = self.random_shape(height, width)
-            shapes.append((shape, color, dims))
-            x, y, s = dims
-            boxes.append([y-s, x-s, y+s, x+s])
-        # Apply non-max suppression wit 0.3 threshold to avoid
-        # shapes covering each other
-        keep_ixs = utils.non_max_suppression(np.array(boxes), np.arange(N), 0.3)
-        shapes = [s for i, s in enumerate(shapes) if i in keep_ixs]
-        return bg_color, shapes
+        image_masks = self.mask_files[str(image_id)]
+        instance_masks = []
+        class_ids = []
+        for class_id in list(image_masks.keys()):
+            bgr_mask = cv2.imread(image_masks[class_id])
+            binary_mask = np.clip(bgr_mask, 0, 1)
+            instance_masks.append(binary_mask[:, :, 0])
+            class_ids.append(class_id)
+        class_ids = np.array(class_ids, dtype=np.int32)
+        mask = np.stack(instance_masks, axis=2).astype(np.bool)
+        return mask, class_ids

@@ -5,7 +5,7 @@ Original Matterport MaskRCNN implementation:
 3) Specification of env:
 	- tensorflow version 1.5
 	- downgrade numpy to 1.16.4
-	- Must have python version >= 3.7
+	- Must have python version = 3.6.11
 	- Keras version : upgrade from 2.0.8 to 2.1.4
 	- If it uses Theano backend, change it to tensorflow backend : In your folder where envs are stored, go to your environment and find the folder etc/conda/activate.d. Go to the file keras_activate.sh and change the back end appropriately.
 	- Initialize with coco weights and NOT imagenet weights
