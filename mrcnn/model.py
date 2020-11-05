@@ -1305,10 +1305,10 @@ def load_image_gt(dataset, config, image_id, augment=False, augmentation=None,
     # if the corresponding mask got cropped out.
     # bbox: [num_instances, (y1, x1, y2, x2)]
     if all(np.sum(mask, axis=(0, 1))>0):
-        boxes = []
-        for i in range(0, mask.shape[2], 3):
-            boxes.append(utils.compute_box_coordinates(mask[:, :, i:i+3]))
-        bbox = np.array(boxes)
+        # boxes = []
+        # for i in range(0, mask.shape[2], 3):
+        #     boxes.append(utils.compute_box_coordinates(mask[:, :, i:i+3]))
+        bbox = utils.extract_bboxes(mask)
     # Active classes
     # Different datasets have different classes, so track the
     # classes supported in the dataset of this image.

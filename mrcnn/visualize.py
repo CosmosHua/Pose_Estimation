@@ -173,7 +173,7 @@ def display_rgb_instances(image, boxes, masks, class_ids, class_names,
                       show_mask=True, show_bbox=True,
                       colors=None, captions=None):
     # Number of instances
-    N = class_ids.shape[0]
+    N = boxes.shape[0]
     auto_show = False
     if not ax:
         _, ax = plt.subplots(1, figsize=figsize)
@@ -191,7 +191,7 @@ def display_rgb_instances(image, boxes, masks, class_ids, class_names,
         color = colors[i]
         if not np.any(boxes[i]):
             continue
-        y1, x1, y2, x2 = boxes[i*3]
+        y1, x1, y2, x2 = boxes[i]
         if show_bbox:
             p = patches.Rectangle((x1, y1), x2 - x1, y2 - y1, linewidth=2,
                                 alpha=0.7, linestyle="dashed",
