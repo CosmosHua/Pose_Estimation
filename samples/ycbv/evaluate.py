@@ -20,7 +20,7 @@ from mrcnn import utils
 import mrcnn.model as modellib
 from mrcnn.model import log
 from ycbv_loader import YCBVDataset
-%matplotlib inline 
+ 
 
 # Directory to save logs and trained model
 MODEL_DIR = os.path.join(ROOT_DIR, "logs")
@@ -56,7 +56,7 @@ model = modellib.MaskRCNN(mode="inference",
                           config=inference_config,
                           model_dir=MODEL_DIR)
 
-weights_path = '/gluster/home/sdevaramani/Thesis/'
+weights_path = '/gluster/home/sdevaramani/Thesis/refactor/logs/ycb20201105T1355/mask_rcnn_ycb_0050.h5'
 model.load_weights(weights_path, by_name=True)
 
 image_ids = np.random.choice(dataset_val.image_ids, 10)

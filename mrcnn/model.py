@@ -1235,7 +1235,8 @@ def load_image_gt(dataset, config, image_id, augment=False, augmentation=None,
     """
     # Load image and mask
     image = dataset.load_image(image_id)
-    mask, class_ids = dataset.load_mask(image_id)
+    #mask, class_ids = dataset.load_mask(image_id)
+    mask, class_ids = dataset.load_rgb_mask(image_id)
     original_shape = image.shape
     image, window, scale, padding, crop = utils.resize_image(
         image,
@@ -1286,8 +1287,18 @@ def load_image_gt(dataset, config, image_id, augment=False, augmentation=None,
 
     # Note that some boxes might be all zeros if the corresponding mask got cropped out.
     # and here is to filter them out
-    _idx = np.sum(mask, axis=(0, 1)) > 0
-    mask = mask[:, :, _idx]
+    #_idx = np.sum(mask, axis=(0, 1)) > 0
+    _idx = []
+    for i in range(0, mask.shape[2], 3):
+        _idx.append((np.sum(mask[:, :, i:i+3], axis=(0, 1)) > 0)[0])
+    masks = []
+    for _id in _idx:
+        m_id = _id.astype(np.int32) * 3
+        masks.append(mask[:, :, m_id:m_id+3])
+    masks = np.stack(masks, axis=2)
+    H, W = mask.shape[0], mask.shape[1]
+    mask = np.reshape(masks, (H, W, 3*len(_idx)))
+    #mask = mask[:, :, _idx]
     class_ids = class_ids[_idx]
     # Bounding boxes. Note that some boxes might be all zeros
     # if the corresponding mask got cropped out.
@@ -1910,7 +1921,7 @@ class MaskRCNN():
             else:
                 input_gt_masks = KL.Input(
                     shape=[config.IMAGE_SHAPE[0], config.IMAGE_SHAPE[1], None],
-                    name="input_gt_masks", dtype=bool)
+                    name="input_gt_masks", dtype=tf.uint8)
         elif mode == "inference":
             # Anchors in normalized coordinates
             input_anchors = KL.Input(shape=[None, 4], name="input_anchors")
