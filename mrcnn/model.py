@@ -1257,11 +1257,12 @@ def load_image_gt(dataset, config, image_id, augment=False, augmentation=None,
         min_scale=config.IMAGE_MIN_SCALE,
         max_dim=config.IMAGE_MAX_DIM,
         mode=config.IMAGE_RESIZE_MODE)
-    masks = []
-    for instance in range(mask.shape[3]):
-        masks.append(utils.resize_mask(mask[:, :, :, instance], scale, padding, crop))
-    mask = np.stack(masks, axis=3)
-    #mask = utils.resize_mask(mask, scale, padding, crop)
+    # masks = []
+    # for instance in range(mask.shape[3]):
+        # masks.append(utils.resize_mask(mask[:, :, instance, :], scale, padding, crop))
+    # print('masks in load image gt .....', masks[0].shape)
+    # mask = np.stack(masks, axis=2)
+    mask = utils.resize_mask(mask, scale, padding, crop)
     # Random horizontal flips.
     # TODO: will be removed in a future update in favor of augmentation
     if augment:
@@ -1320,13 +1321,10 @@ def load_image_gt(dataset, config, image_id, augment=False, augmentation=None,
     # if the corresponding mask got cropped out.
     # bbox: [num_instances, (y1, x1, y2, x2)]
     if all(np.sum(mask, axis=(0, 1, 2))>0):
-        boxes = []
-        # for i in range(0, mask.shape[2], 3):
-        #     boxes.append(utils.compute_box_coordinates(mask[:, :, i:i+3]))
-        for i in range(mask.shape[3]):
-            boxes.append(utils.compute_box_coordinates(mask[:, :, :, i]))
-        bbox = np.array(boxes)
-        print('boxes ...........', bbox)
+        # boxes = []
+        # for i in range(mask.shape[3]):
+            # boxes.append(utils.compute_box_coordinates(mask[:, :, :, i]))
+        bbox = utils.extract_bboxes(mask)
     # Active classes
     # Different datasets have different classes, so track the
     # classes supported in the dataset of this image.
@@ -1336,11 +1334,11 @@ def load_image_gt(dataset, config, image_id, augment=False, augmentation=None,
 
     # Resize masks to smaller size to reduce memory usage
     if use_mini_mask:
-        minimized = []
-        for i in range(mask.shape[3]):
-            minimized.append(cv2.resize(mask[:, :, :, i], config.MINI_MASK_SHAPE))
-        mask = np.stack(minimized, axis=3)
-        #mask = utils.minimize_mask(bbox, mask, config.MINI_MASK_SHAPE)
+        # minimized = []
+        # for i in range(mask.shape[3]):
+            # minimized.append(cv2.resize(mask[:, :, i, :], config.MINI_MASK_SHAPE))
+        # mask = np.stack(minimized, axis=2)
+        mask = utils.minimize_rgb_mask(bbox, mask, config.MINI_MASK_SHAPE)
 
     # Image meta data
     image_meta = compose_image_meta(image_id, original_shape, image.shape,

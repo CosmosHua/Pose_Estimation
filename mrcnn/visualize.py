@@ -167,6 +167,7 @@ def display_instances(image, boxes, masks, class_ids, class_names,
     if auto_show:
         plt.show()
 
+
 def display_rgb_instances(image, boxes, masks, class_ids, class_names,
                       scores=None, title="",
                       figsize=(16, 16), ax=None,
@@ -206,10 +207,12 @@ def display_rgb_instances(image, boxes, masks, class_ids, class_names,
             caption = captions[i]
         ax.text(x1, y1 + 8, caption,
                 color='w', size=11, backgroundcolor="none")
-        
-        m_id = i * 3
-        mask = masks[:, :, m_id:m_id+3]
-        masked_image = cv2.add(masked_image, mask)
+        if show_mask:
+            # for i in range(masks.shape[2]):
+                # m_id = i * 3
+            mask = masks[:, :, i, :]
+            # mask = masks[:, :, i:i+3]
+            masked_image = cv2.add(masked_image, mask)
     ax.imshow(masked_image)
     if auto_show:
         plt.show()
@@ -357,15 +360,17 @@ def display_rgb_top_masks(image, mask, class_ids, class_names, limit=4):
     titles.append("H x W={}x{}".format(image.shape[0], image.shape[1]))
     # Pick top prominent classes in this image
     unique_class_ids = np.unique(class_ids)
-    mask_area = [np.sum(mask[:, :, np.where(class_ids == i)[0]])
+    mask_area = [np.sum(mask[:, :, np.where(class_ids == i)[0], :])
                  for i in unique_class_ids]
     top_ids = [v[0] for v in sorted(zip(unique_class_ids, mask_area),
                                     key=lambda r: r[1], reverse=True) if v[1] > 0]
     # Generate images and titles
     for i in range(limit):
         class_id = top_ids[i] if i < len(top_ids) else -1
-        m_id = np.where(class_ids == class_id)[0][0] * 3
-        m = mask[:, :, m_id:m_id+3]
+        m_id = np.where(class_ids == class_id)[0][0]
+        m = mask[:, :, m_id, :]
+        # m_id = np.where(class_ids == class_id)[0][0] * 3
+        # m = mask[:, :, m_id:m_id+3]
         # Pull masks of instances belonging to the same class.
         # m = mask[:, :, np.where(class_ids == class_id)[0]]
         # m = np.sum(m * np.arange(1, m.shape[-1] + 1), -1)
