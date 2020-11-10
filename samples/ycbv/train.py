@@ -6,9 +6,10 @@ import re
 import time
 import numpy as np
 import cv2
-
+import tensorflow as tf
 ROOT_DIR = os.path.abspath("../../")
 
+from mrcnn.model import data_generator
 # Import Mask RCNN
 sys.path.append(ROOT_DIR)  # To find local version of the library
 from mrcnn.config import Config
@@ -34,8 +35,8 @@ class YCBVConfig(Config):
     IMAGE_MIN_DIM = 640
     IMAGE_MAX_DIM = 640
     # RPN_ANCHOR_SCALES = (8, 16, 32, 64, 128)
-    # TRAIN_ROIS_PER_IMAGE = 32
-    STEPS_PER_EPOCH = 100
+    #TRAIN_ROIS_PER_IMAGE = 32
+    STEPS_PER_EPOCH = 50
     VALIDATION_STEPS = 5
 
 config = YCBVConfig()
@@ -74,10 +75,10 @@ model.train(dataset_train, dataset_val,
 
 #model.train(dataset_train, dataset_val,
 #            learning_rate=config.LEARNING_RATE,
-#            epochs=5,
+#            epochs=2,
 #            layers='4+')
 
 model.train(dataset_train, dataset_val, 
             learning_rate=config.LEARNING_RATE / 10,
-            epochs=2, 
+            epochs=1, 
             layers="all")
