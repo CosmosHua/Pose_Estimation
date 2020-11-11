@@ -555,8 +555,9 @@ def minimize_rgb_mask(bbox, mask, mini_shape):
 
     See inspect_data.ipynb notebook for more details.
     """
-    mini_mask = np.zeros(mini_shape + (mask.shape[0], mask.shape[-1],),)
-    for i in range(mask.shape[-1]):
+    #mini_mask = np.zeros(mini_shape + (mask.shape[0], mask.shape[-1],),)
+    mini_mask = []
+    for i in range(mask.shape[0]):
         m = mask[i, :, :, :]
         # Pick slice and cast to bool in case load_mask() returned wrong dtype
         # m = mask[:, :, i].astype(bool)
@@ -566,8 +567,9 @@ def minimize_rgb_mask(bbox, mask, mini_shape):
             raise Exception("Invalid bounding box with area of zero")
         # Resize with bilinear interpolation
         m = resize(m, mini_shape)
-        mini_mask[i, :, :, :] = np.around(m).astype(np.bool)
-    return mini_mask
+        mini_mask.append(np.around(m))
+        #mini_mask[i, :, :, :] = np.around(m)
+    return np.stack(mini_mask, axis=0)
 
 
 def expand_mask(bbox, mini_mask, image_shape):

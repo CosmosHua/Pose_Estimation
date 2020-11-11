@@ -36,7 +36,7 @@ class YCBVConfig(Config):
     IMAGE_MAX_DIM = 640
     # RPN_ANCHOR_SCALES = (8, 16, 32, 64, 128)
     #TRAIN_ROIS_PER_IMAGE = 32
-    STEPS_PER_EPOCH = 50
+    STEPS_PER_EPOCH = 1000
     VALIDATION_STEPS = 5
 
 config = YCBVConfig()
@@ -73,12 +73,12 @@ model.train(dataset_train, dataset_val,
             epochs=1, 
             layers='heads')
 
-#model.train(dataset_train, dataset_val,
-#            learning_rate=config.LEARNING_RATE,
-#            epochs=2,
-#            layers='4+')
+model.train(dataset_train, dataset_val,
+            learning_rate=config.LEARNING_RATE,
+            epochs=2,
+            layers='4+')
 
 model.train(dataset_train, dataset_val, 
             learning_rate=config.LEARNING_RATE / 10,
-            epochs=1, 
+            epochs=5, 
             layers="all")

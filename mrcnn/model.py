@@ -525,7 +525,7 @@ def detection_targets_graph(proposals, gt_class_ids, gt_boxes, gt_masks, config)
     
     #mask_indices = tf.transpose(tf.map_fn(lambda x: (x*3, (x*3)+1, (x*3)+2), indices, dtype=(tf.int64, tf.int64, tf.int64)))
     #mask_indices = K.flatten(mask_indices) 
-    gt_masks = tf.gather(gt_masks, indices, name="trim_gt_masks")
+    gt_masks = tf.gather(gt_masks, indices, axis=0, name="trim_gt_masks")
     
     # Handle COCO crowds
     # A crowd box in COCO is a bounding box around several instances. Exclude
@@ -538,7 +538,7 @@ def detection_targets_graph(proposals, gt_class_ids, gt_boxes, gt_masks, config)
 
     #non_crowd_ix_masks = tf.transpose(tf.map_fn(lambda x: (x*3, (x*3)+1, (x*3)+2), non_crowd_ix, dtype=(tf.int64, tf.int64, tf.int64)))
     #non_crowd_ix_masks = K.flatten(non_crowd_ix_masks)
-    gt_masks = tf.gather(gt_masks, non_crowd_ix)
+    gt_masks = tf.gather(gt_masks, non_crowd_ix, axis=0)
 
     # Compute overlaps matrix [proposals, gt_boxes]
     overlaps = overlaps_graph(proposals, gt_boxes)
@@ -591,7 +591,7 @@ def detection_targets_graph(proposals, gt_class_ids, gt_boxes, gt_masks, config)
     # Pick the right mask for each ROI
     #roi_gt_box_assignment = tf.transpose(tf.map_fn(lambda x: (x*3, (x*3)+1, (x*3)+2), roi_gt_box_assignment, dtype=(tf.int64, tf.int64, tf.int64)))
     #roi_gt_box_assignment = K.flatten(roi_gt_box_assignment)    
-    roi_masks = tf.gather(gt_masks, roi_gt_box_assignment)
+    roi_masks = tf.gather(gt_masks, roi_gt_box_assignment, axis=0)
     # Compute mask targets
     boxes = positive_rois
     if config.USE_MINI_MASK:
@@ -1190,11 +1190,14 @@ def mrcnn_mask_loss_graph(target_masks, target_class_ids, pred_masks):
     # Reshape for simplicity. Merge first two dimensions into one.
     target_class_ids = K.reshape(target_class_ids, (-1,))
     mask_shape = tf.shape(target_masks)
+    print('target masks ..............', target_masks)
     target_masks = K.reshape(target_masks, (-1, mask_shape[2], mask_shape[3]))
+    #print('target masks. ............', target_masks)
     pred_shape = tf.shape(pred_masks)
+    print('predicted masks .............', pred_masks)
     pred_masks = K.reshape(pred_masks,
                            (-1, pred_shape[2], pred_shape[3], pred_shape[4]))
-    
+    #print('predicted masks...............', pred_masks)
     # Permute predicted masks to [N, num_classes, height, width]
     pred_masks = tf.transpose(pred_masks, [0, 3, 1, 2])
 
@@ -1206,7 +1209,7 @@ def mrcnn_mask_loss_graph(target_masks, target_class_ids, pred_masks):
     indices = tf.stack([positive_ix, positive_class_ids], axis=1)
     
     # Gather the masks (predicted and true) that contribute to loss
-    y_true = tf.gather(target_masks, positive_ix)
+    y_true = tf.gather(target_masks, positive_ix, axis=0)
     y_pred = tf.gather_nd(pred_masks, indices)
 
     # Compute binary cross entropy. If no positive ROIs, then return 0.
@@ -1339,7 +1342,6 @@ def load_image_gt(dataset, config, image_id, augment=False, augmentation=None,
             # minimized.append(cv2.resize(mask[:, :, i, :], config.MINI_MASK_SHAPE))
         # mask = np.stack(minimized, axis=2)
         mask = utils.minimize_rgb_mask(bbox, mask, config.MINI_MASK_SHAPE)
-
     # Image meta data
     image_meta = compose_image_meta(image_id, original_shape, image.shape,
                                     window, scale, active_class_ids)
@@ -1772,8 +1774,8 @@ def data_generator(dataset, config, shuffle=True, augment=False, augmentation=No
             # Skip images that have no instances. This can happen in cases
             # where we train on a subset of classes and the image doesn't
             # have any of the classes we care about.
-            h, w, channels = gt_masks.shape[:3]
-            gt_masks = np.reshape(gt_masks, (gt_masks.shape[-1], h, w, channels))
+            #h, w, channels = gt_masks.shape[:3]
+            #gt_masks = np.reshape(gt_masks, (gt_masks.shape[-1], h, w, channels))
 
             if not np.any(gt_class_ids > 0):
                 continue
@@ -1836,7 +1838,7 @@ def data_generator(dataset, config, shuffle=True, augment=False, augmentation=No
             batch_rpn_bbox[b] = rpn_bbox
             batch_images[b] = mold_image(image.astype(np.float32), config)
             batch_gt_class_ids[b, :gt_class_ids.shape[0]] = gt_class_ids
-            batch_gt_boxes[b, :gt_boxes.shape[0]] = gt_boxes            
+            batch_gt_boxes[b, :gt_boxes.shape[0]] = gt_boxes
             batch_gt_masks[b, :gt_masks.shape[0], :, :, :] = gt_masks
             if random_rois:
                 batch_rpn_rois[b] = rpn_rois
@@ -1944,11 +1946,11 @@ class MaskRCNN():
                 input_gt_masks = KL.Input(
                     shape=[None, config.MINI_MASK_SHAPE[0],
                            config.MINI_MASK_SHAPE[1], 3],
-                    name="input_gt_masks", dtype=tf.uint8)
+                    name="input_gt_masks", dtype=tf.float32)
             else:
                 input_gt_masks = KL.Input(
                     shape=[None, config.IMAGE_SHAPE[0], config.IMAGE_SHAPE[1], 3],
-                    name="input_gt_masks", dtype=tf.uint8)
+                    name="input_gt_masks", dtype=tf.float32)
         elif mode == "inference":
             # Anchors in normalized coordinates
             input_anchors = KL.Input(shape=[None, 4], name="input_anchors")
