@@ -1211,7 +1211,8 @@ def mrcnn_mask_loss_graph(target_masks, target_class_ids, pred_masks):
     # Gather the masks (predicted and true) that contribute to loss
     y_true = tf.gather(target_masks, positive_ix, axis=0)
     y_pred = tf.gather_nd(pred_masks, indices)
-
+    print('y_true ............', y_true)
+    print('y_pred .............', y_pred)
     # Compute binary cross entropy. If no positive ROIs, then return 0.
     # shape: [batch, roi, num_classes]
     loss = K.switch(tf.size(y_true) > 0,
