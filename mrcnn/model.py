@@ -1189,7 +1189,7 @@ def mrcnn_mask_loss_graph(target_masks, target_class_ids, pred_masks):
     """
     # Reshape for simplicity. Merge first two dimensions into one.
     target_class_ids = K.reshape(target_class_ids, (-1,))
-    mask_shape = tf.shape(target_masks)
+    mask_shape = tf.shape(target_masks) #(batch, num_rois, H, W, 3)
     print('target masks ..............', target_masks)
     target_masks = K.reshape(target_masks, (-1, mask_shape[2], mask_shape[3]))
     #print('target masks. ............', target_masks)
@@ -1211,8 +1211,8 @@ def mrcnn_mask_loss_graph(target_masks, target_class_ids, pred_masks):
     # Gather the masks (predicted and true) that contribute to loss
     y_true = tf.gather(target_masks, positive_ix, axis=0)
     y_pred = tf.gather_nd(pred_masks, indices)
-    print('y_true ............', y_true)
-    print('y_pred .............', y_pred)
+    print('y_true ............', y_true) # (batch, num_rois*3, H, W)
+    print('y_pred .............', y_pred) # (batch, num_classes*3, H, W)
     # Compute binary cross entropy. If no positive ROIs, then return 0.
     # shape: [batch, roi, num_classes]
     loss = K.switch(tf.size(y_true) > 0,
@@ -1324,10 +1324,11 @@ def load_image_gt(dataset, config, image_id, augment=False, augmentation=None,
     # Bounding boxes. Note that some boxes might be all zeros
     # if the corresponding mask got cropped out.
     # bbox: [num_instances, (y1, x1, y2, x2)]
-    if all(np.sum(mask, axis=(0, 1, 2))>0):
+    if np.sum(mask, axis=(0, 1, 2))>0:
         # boxes = []
-        # for i in range(mask.shape[3]):
-            # boxes.append(utils.compute_box_coordinates(mask[:, :, :, i]))
+        # for i in range(0, mask.shape[0], 3):
+            # boxes.append(utils.compute_box_coordinates(mask.T[:, :, i:i+3]))
+        # bbox = np.array(boxes).astype(np.int32)
         bbox = utils.extract_bboxes(mask)
     # Active classes
     # Different datasets have different classes, so track the

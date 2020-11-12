@@ -46,11 +46,13 @@ def extract_bboxes(mask):
 
     Returns: bbox array [num_instances, (y1, x1, y2, x2)].
     """
-    boxes = np.zeros([int(mask.shape[0]), 4], dtype=np.int32)
-    for i in range(mask.shape[0]):
-        # m_id = i * 3
-        # m = mask[:, :, m_id:m_id+3]
-        m = mask[i, :, :, :]
+    mask = mask.T
+    boxes = np.zeros([int(mask.shape[-1]/3), 4], dtype=np.int32)
+    for i in range(int(mask.shape[-1]/3)):
+        m_id = i * 3
+        m = mask[:, :, m_id:m_id+3]
+        # m = mask[i, :, :, :]
+        # m = mask[:, : i]
         # Bounding box.
         horizontal_indicies = np.where(np.any(m, axis=0))[0]
         vertical_indicies = np.where(np.any(m, axis=1))[0]
@@ -514,19 +516,25 @@ def resize_mask(mask, scale, padding, crop=None):
     """
     # Suppress warning from scipy 0.13.0, the output shape of zoom() is
     # calculated with round() instead of int()
-    resized = []
-    masks = np.copy(mask)
-    # with warnings.catch_warnings():
-    #     warnings.simplefilter("ignore")
-    #     masks = scipy.ndimage.zoom(masks, zoom=[scale, scale, 1], order=0)
-    for i in range(masks.shape[0]):
-        mask = masks[i, :, :, :]
-        if crop is not None:
-            y, x, h, w = crop
-            resized.append(mask[y:y + h, x:x + w])
-        else:
-            resized.append(np.pad(mask, padding, mode='constant', constant_values=0))
-    return np.stack(resized, axis=0)
+    # resized = []
+    mask = mask.T
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        mask = scipy.ndimage.zoom(mask, zoom=[scale, scale, 1], order=0)
+    if crop is not None:
+        y, x, h, w = crop
+        mask = mask[y:y + h, x:x + w]
+    else:
+        mask = np.pad(mask, padding, mode='constant', constant_values=0)
+    return mask.T
+    # for i in range(masks.shape[-1]):
+    #     mask = masks[:, :, i]
+    #     if crop is not None:
+    #         y, x, h, w = crop
+    #         mask[y:y + h, x:x + w])
+    #     else:
+    #         resized.append(np.pad(mask, padding, mode='constant', constant_values=0))
+    # return np.stack(resized, axis=0)
 
 
 def minimize_mask(bbox, mask, mini_shape):
@@ -555,10 +563,12 @@ def minimize_rgb_mask(bbox, mask, mini_shape):
 
     See inspect_data.ipynb notebook for more details.
     """
-    #mini_mask = np.zeros(mini_shape + (mask.shape[0], mask.shape[-1],),)
-    mini_mask = []
-    for i in range(mask.shape[0]):
-        m = mask[i, :, :, :]
+    mask = mask.T
+    mini_mask = np.zeros(mini_shape + (mask.shape[-1],),)
+    # mini_mask = []
+    for i in range(mask.shape[-1]):
+        m = mask[:, :, i]
+        # m = mask[i, :, :, :]
         # Pick slice and cast to bool in case load_mask() returned wrong dtype
         # m = mask[:, :, i].astype(bool)
         y1, x1, y2, x2 = bbox[i][:4]
@@ -567,9 +577,9 @@ def minimize_rgb_mask(bbox, mask, mini_shape):
             raise Exception("Invalid bounding box with area of zero")
         # Resize with bilinear interpolation
         m = resize(m, mini_shape)
-        mini_mask.append(np.around(m))
-        #mini_mask[i, :, :, :] = np.around(m)
-    return np.stack(mini_mask, axis=0)
+        # mini_mask.append(np.around(m))
+        mini_mask[:, :, i] = np.around(m)
+    return mini_mask.T
 
 
 def expand_mask(bbox, mini_mask, image_shape):
