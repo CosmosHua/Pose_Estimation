@@ -23,7 +23,7 @@ from ycbv_loader import YCBVDataset
 #MODEL_DIR = os.path.join(ROOT_DIR + '/Thesis', "logs")
 MODEL_DIR = '/gluster/home/sdevaramani/Thesis/refactor/logs'
 COCO_MODEL_PATH = '/gluster/home/sdevaramani/Thesis/weights/mask_rcnn_coco.h5'
-data_path = '/gluster/home/sdevaramani/Thesis/randomized_data'
+data_path = '/gluster/home/sdevaramani/Thesis/old_random_data'
 
 
 class YCBVConfig(Config):
@@ -37,7 +37,7 @@ class YCBVConfig(Config):
     # RPN_ANCHOR_SCALES = (8, 16, 32, 64, 128)
     #TRAIN_ROIS_PER_IMAGE = 32
     STEPS_PER_EPOCH = 1000
-    VALIDATION_STEPS = 5
+    VALIDATION_STEPS = 50
 
 config = YCBVConfig()
 
@@ -70,12 +70,12 @@ elif init_with == "last":
 
 model.train(dataset_train, dataset_val, 
             learning_rate=config.LEARNING_RATE, 
-            epochs=1, 
+            epochs=2, 
             layers='heads')
 
 model.train(dataset_train, dataset_val,
             learning_rate=config.LEARNING_RATE,
-            epochs=2,
+            epochs=3,
             layers='4+')
 
 model.train(dataset_train, dataset_val, 

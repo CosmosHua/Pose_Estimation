@@ -21,7 +21,7 @@ from mrcnn.model import log
 from ycbv_loader import YCBVDataset
 # Directory to save logs and trained model
 MODEL_DIR = os.path.join(ROOT_DIR, "logs")
-data_path = '/gluster/home/sdevaramani/Thesis/randomized_data'
+data_path = '/gluster/home/sdevaramani/Thesis/old_random_data'
 
 class NumpyArrayEncoder(JSONEncoder):
     def default(self, obj):
@@ -69,7 +69,7 @@ model = modellib.MaskRCNN(mode="inference",
 # Load trained weights
 #print("Loading weights from ", model_path)
 
-weights_path = '/gluster/home/sdevaramani/Thesis/refactor/logs/ycb20201111T2044/mask_rcnn_ycb_0005.h5'
+weights_path = '/gluster/home/sdevaramani/Thesis/refactor/logs/ycb20201114T2009/mask_rcnn_ycb_0005.h5'
 model.load_weights(weights_path, by_name=True)
 
 #model.load_weights(model_path, by_name=True)

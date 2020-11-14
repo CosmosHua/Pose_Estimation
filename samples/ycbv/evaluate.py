@@ -56,7 +56,7 @@ model = modellib.MaskRCNN(mode="inference",
                           config=inference_config,
                           model_dir=MODEL_DIR)
 
-weights_path = '/gluster/home/sdevaramani/Thesis/refactor/logs/ycb20201105T2051/mask_rcnn_ycb_0050.h5'
+weights_path = '/gluster/home/sdevaramani/Thesis/refactor/logs/ycb20201113T0254/mask_rcnn_ycb_0050.h5'
 model.load_weights(weights_path, by_name=True)
 
 image_ids = np.random.choice(dataset_val.image_ids, 10)
