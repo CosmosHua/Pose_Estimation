@@ -21,7 +21,7 @@ from mrcnn.model import log
 from ycbv_loader import YCBVDataset
 # Directory to save logs and trained model
 MODEL_DIR = os.path.join(ROOT_DIR, "logs")
-data_path = '/gluster/home/sdevaramani/Thesis/old_random_data'
+data_path = '/gluster/home/sdevaramani/Thesis/50_images'
 
 class NumpyArrayEncoder(JSONEncoder):
     def default(self, obj):
@@ -36,8 +36,8 @@ class YCBVConfig(Config):
     GPU_COUNT = 1
     IMAGES_PER_GPU = 2
     NUM_CLASSES = 1 + 21  # background + 3 shapes
-    IMAGE_MIN_DIM = 640
-    IMAGE_MAX_DIM = 640
+    IMAGE_MIN_DIM = 320
+    IMAGE_MAX_DIM = 320
     # RPN_ANCHOR_SCALES = (8, 16, 32, 64, 128)
     # TRAIN_ROIS_PER_IMAGE = 32
     STEPS_PER_EPOCH = 100
@@ -69,7 +69,7 @@ model = modellib.MaskRCNN(mode="inference",
 # Load trained weights
 #print("Loading weights from ", model_path)
 
-weights_path = '/gluster/home/sdevaramani/Thesis/refactor/logs/ycb20201114T2009/mask_rcnn_ycb_0005.h5'
+weights_path = '/gluster/home/sdevaramani/Thesis/refactor/versions/mse_logs/ycb20201119T2116/mask_rcnn_ycb_0020.h5'
 model.load_weights(weights_path, by_name=True)
 
 #model.load_weights(model_path, by_name=True)
@@ -81,7 +81,7 @@ original_image, _, gt_class_ids, gt_bbox, gt_mask = modellib.load_image_gt(datas
 
 print(gt_bbox)
 gt_data = {'rois': gt_bbox, 'class_ids':gt_class_ids, 'masks': gt_mask}
-cv2.imwrite('original_image.png', original_image)
+cv2.imwrite('image.png', original_image)
 results = model.detect([original_image], verbose=1)
  
 r = results[0]
@@ -90,7 +90,7 @@ data = {'rois': r['rois'], 'class_ids': r['class_ids'], 'scores': r['scores'], '
 print('results ....', r['rois'])
 print(r['class_ids'])
 print(r['masks'].shape)
-with open('gt.json', 'w') as f:
+with open('ground_truth.json', 'w') as f:
     json.dump(gt_data, f, cls=NumpyArrayEncoder)
 
 with open('results.json', 'w') as fp:

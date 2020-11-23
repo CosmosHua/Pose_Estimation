@@ -98,6 +98,6 @@ class YCBVDataset(utils.Dataset):
             class_ids.append(class_id)
         class_ids = np.array(class_ids, dtype=np.int32)
         mask = np.stack(instance_masks, axis=2)
-        mask = np.reshape(mask, (640, 640, 3 * len(class_ids)))
-        mask = mask.T / 255.0
+        mask = np.reshape(mask, (320, 320, 3 * len(class_ids)))
+        mask = mask / 255.0
         return mask, class_ids
