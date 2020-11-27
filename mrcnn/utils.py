@@ -48,11 +48,11 @@ def extract_bboxes(mask):
     Returns: bbox array [num_instances, (y1, x1, y2, x2)].
     """
     #mask = mask.T
-    boxes = np.zeros([int(mask.shape[-1]/3), 4], dtype=np.int32)
-    for i in range(int(mask.shape[-1]/3)):
-        m_id = i * 3
+    boxes = np.zeros([int(mask.shape[-1]/2), 4], dtype=np.int32)
+    for i in range(int(mask.shape[-1]/2)):
+        m_id = i * 2
         #m = mask[i]
-        m = mask[:, :, m_id:m_id+3]
+        m = mask[:, :, m_id:m_id+2]
         # m = mask[i, :, :, :]
         # m = mask[:, : i]
         # Bounding box.
@@ -520,18 +520,25 @@ def resize_mask(masks, scale, padding, crop=None):
     # calculated with round() instead of int()
     resized = []
     H, W, C = masks.shape
-    for i in range(0, masks.shape[-1], 3):
-        mask = masks[:, :, i:i+3]
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            mask = scipy.ndimage.zoom(mask, zoom=[scale, scale, 1], order=0)
+    #for i in range(0, masks.shape[-1], 3):
+    #    mask = masks[:, :, i:i+3]
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        masks = scipy.ndimage.zoom(masks, zoom=[scale, scale, 1], order=0)
+    for i in range(0, masks.shape[-1], 2):
+        mask = masks[:, :, i:i+2]
         if crop is not None:
             y, x, h, w = crop
+            #masks = masks[y:y + h, x:x + w]
             resized.append(mask[y:y + h, x:x + w])
         else:
+            #masks = np.pad(masks, padding, mode='constant', constant_values=0)
             resized.append(np.pad(mask, padding, mode='constant', constant_values=0))
     resized = np.stack(resized, axis=2)
-    return np.reshape(resized, (H, W, C))
+    resized = np.reshape(resized, (H, W, C))
+    return resized
+    #resized = np.stack(resized, axis=2)
+    #return np.reshape(resized, (H, W, C))
     # for i in range(masks.shape[-1]):
     #     mask = masks[:, :, i]
     #     if crop is not None:
@@ -572,9 +579,9 @@ def minimize_rgb_mask(bbox, mask, mini_shape):
     mini_mask = np.zeros(mini_shape + (mask.shape[-1],),)
     #mini_mask = np.zeros((mask.shape[0],) + mini_shape + (mask.shape[-1],),)
     # mini_mask = []
-    for i in range(int(mask.shape[-1]/3)):
-        m_id = i * 3
-        m = mask[:, :, m_id:m_id+3]
+    for i in range(int(mask.shape[-1]/2)):
+        m_id = i * 2
+        m = mask[:, :, m_id:m_id+2]
         #m = mask[i]
         # m = mask[i, :, :, :]
         # Pick slice and cast to bool in case load_mask() returned wrong dtype
@@ -587,7 +594,7 @@ def minimize_rgb_mask(bbox, mask, mini_shape):
         m = resize(m, mini_shape)
         #mini_mask[i] = m
         # mini_mask.append(np.around(m))
-        mini_mask[:, :, m_id:m_id+3] = np.round(m)
+        mini_mask[:, :, m_id:m_id+2] = np.round(m)
     return mini_mask
 
 
@@ -628,7 +635,7 @@ def unmold_mask(mask, bbox, image_shape):
     #for i in range(3):
     #    m.append(resize(mask[:, :, i], (y2 - y1, x2 - x1)))
     #mask = np.stack(m, axis=2)
-    #mask = np.where(mask <= threshold, mask, 0)
+    mask = np.where(mask >= threshold, mask, 0)
     # Put the mask in the right location.
     full_mask = np.zeros(image_shape[:2], dtype=np.float32)
     full_mask[y1:y2, x1:x2] = mask

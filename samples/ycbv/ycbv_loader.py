@@ -94,10 +94,10 @@ class YCBVDataset(utils.Dataset):
         for class_id in list(image_masks.keys()):
             bgr_mask = cv2.imread(image_masks[class_id])
             rgb_mask = cv2.cvtColor(bgr_mask, cv2.COLOR_BGR2RGB)
-            instance_masks.append(rgb_mask)
+            instance_masks.append(rgb_mask[:, :, 0:2])
             class_ids.append(class_id)
         class_ids = np.array(class_ids, dtype=np.int32)
         mask = np.stack(instance_masks, axis=2)
-        mask = np.reshape(mask, (320, 320, 3 * len(class_ids)))
+        mask = np.reshape(mask, (320, 320, 2*len(class_ids)))
         mask = mask / 255.0
         return mask, class_ids
