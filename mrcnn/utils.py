@@ -587,7 +587,7 @@ def minimize_rgb_mask(bbox, mask, mini_shape):
         m = resize(m, mini_shape)
         #mini_mask[i] = m
         # mini_mask.append(np.around(m))
-        mini_mask[:, :, m_id:m_id+3] = m
+        mini_mask[:, :, m_id:m_id+3] = np.round(m)
     return mini_mask
 
 
@@ -624,14 +624,14 @@ def unmold_mask(mask, bbox, image_shape):
     """
     threshold = 0.5
     y1, x1, y2, x2 = bbox
-    mask = cv2.resize(mask, (x2 - x1, y2 - y1))
+    mask = resize(mask, (y2 - y1, x2 - x1))
     #for i in range(3):
     #    m.append(resize(mask[:, :, i], (y2 - y1, x2 - x1)))
     #mask = np.stack(m, axis=2)
     #mask = np.where(mask <= threshold, mask, 0)
     # Put the mask in the right location.
-    full_mask = np.zeros(image_shape, dtype=np.float32)
-    full_mask[y1:y2, x1:x2, 0:3] = mask
+    full_mask = np.zeros(image_shape[:2], dtype=np.float32)
+    full_mask[y1:y2, x1:x2] = mask
     return full_mask
 
 

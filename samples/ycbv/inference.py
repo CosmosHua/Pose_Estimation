@@ -69,7 +69,7 @@ model = modellib.MaskRCNN(mode="inference",
 # Load trained weights
 #print("Loading weights from ", model_path)
 
-weights_path = '/gluster/home/sdevaramani/Thesis/refactor/versions/mse_logs/ycb20201119T2116/mask_rcnn_ycb_0020.h5'
+weights_path = '/gluster/home/sdevaramani/Thesis/refactor/versions/mse_logs/ycb20201126T1250/mask_rcnn_ycb_0010.h5'
 model.load_weights(weights_path, by_name=True)
 
 #model.load_weights(model_path, by_name=True)
@@ -85,11 +85,11 @@ cv2.imwrite('image.png', original_image)
 results = model.detect([original_image], verbose=1)
  
 r = results[0]
-data = {'rois': r['rois'], 'class_ids': r['class_ids'], 'scores': r['scores'], 'masks': r['masks']}
+data = {'rois': r['rois'], 'class_ids': r['class_ids'], 'scores': r['scores'], 'r_masks': r['r_masks'], 'g_masks': r['g_masks']}
 
 print('results ....', r['rois'])
 print(r['class_ids'])
-print(r['masks'].shape)
+#print(r['masks'].shape)
 with open('ground_truth.json', 'w') as f:
     json.dump(gt_data, f, cls=NumpyArrayEncoder)
 
