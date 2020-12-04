@@ -23,7 +23,7 @@ from ycbv_loader import YCBVDataset
 #MODEL_DIR = os.path.join(ROOT_DIR + '/Thesis', "logs")
 MODEL_DIR = '/gluster/home/sdevaramani/Thesis/refactor/versions/binary_cross_entropy_logs'
 COCO_MODEL_PATH = '/gluster/home/sdevaramani/Thesis/weights/mask_rcnn_coco.h5'
-data_path = '/gluster/home/sdevaramani/Thesis/50_images'
+data_path = '/gluster/home/sdevaramani/Thesis/randomized_data'
 
 
 class YCBVConfig(Config):
@@ -34,7 +34,7 @@ class YCBVConfig(Config):
     NUM_CLASSES = 1 + 21  # background + 3 shapes
     IMAGE_MIN_DIM = 320
     IMAGE_MAX_DIM = 320
-    # RPN_ANCHOR_SCALES = (8, 16, 32, 64, 128)
+    #RPN_ANCHOR_SCALES = (64, 128, 256, 512, 1024)
     #TRAIN_ROIS_PER_IMAGE = 32
     STEPS_PER_EPOCH = 1000
     VALIDATION_STEPS = 500

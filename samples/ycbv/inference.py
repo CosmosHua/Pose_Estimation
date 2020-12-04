@@ -21,7 +21,7 @@ from mrcnn.model import log
 from ycbv_loader import YCBVDataset
 # Directory to save logs and trained model
 MODEL_DIR = os.path.join(ROOT_DIR, "logs")
-data_path = '/gluster/home/sdevaramani/Thesis/50_images'
+data_path = '/gluster/home/sdevaramani/Thesis/randomized_data'
 
 class NumpyArrayEncoder(JSONEncoder):
     def default(self, obj):
@@ -69,12 +69,12 @@ model = modellib.MaskRCNN(mode="inference",
 # Load trained weights
 #print("Loading weights from ", model_path)
 
-weights_path = '/gluster/home/sdevaramani/Thesis/refactor/versions/binary_cross_entropy_logs/ycb20201127T1417/mask_rcnn_ycb_0010.h5'
+weights_path = '/gluster/home/sdevaramani/Thesis/refactor/versions/binary_cross_entropy_logs/ycb20201203T1824/mask_rcnn_ycb_0010.h5'
 model.load_weights(weights_path, by_name=True)
 
 #model.load_weights(model_path, by_name=True)
 image_id = random.choice(dataset_val.image_ids)
-
+#image_id = 454
 print('image id................', image_id)
 original_image, _, gt_class_ids, gt_bbox, gt_mask = modellib.load_image_gt(dataset_val, inference_config,
                                                  image_id, use_mini_mask=False)
@@ -85,7 +85,7 @@ cv2.imwrite('image.png', original_image)
 results = model.detect([original_image], verbose=1)
  
 r = results[0]
-data = {'rois': r['rois'], 'class_ids': r['class_ids'], 'scores': r['scores'], 'r_masks': r['r_masks']}
+data = {'rois': r['rois'], 'class_ids': r['class_ids'], 'scores': r['scores'], 'r_masks': r['r_masks'], 'g_masks': r['g_masks'], 'b_masks': r['b_masks']}
 
 print('results ....', r['rois'])
 print(r['class_ids'])

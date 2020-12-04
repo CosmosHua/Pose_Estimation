@@ -24,7 +24,7 @@ from ycbv_loader import YCBVDataset
 
 # Directory to save logs and trained model
 MODEL_DIR = os.path.join(ROOT_DIR, "logs")
-data_path = '/gluster/home/sdevaramani/Thesis/randomized_data'
+data_path = '/gluster/home/sdevaramani/Thesis/50_images'
 
 
 class YCBVConfig(Config):
@@ -33,8 +33,8 @@ class YCBVConfig(Config):
     GPU_COUNT = 1
     IMAGES_PER_GPU = 2
     NUM_CLASSES = 1 + 21  # background + 3 shapes
-    IMAGE_MIN_DIM = 640
-    IMAGE_MAX_DIM = 640
+    IMAGE_MIN_DIM = 320
+    IMAGE_MAX_DIM = 320
     # RPN_ANCHOR_SCALES = (8, 16, 32, 64, 128)
     # TRAIN_ROIS_PER_IMAGE = 32
     STEPS_PER_EPOCH = 100
@@ -56,7 +56,7 @@ model = modellib.MaskRCNN(mode="inference",
                           config=inference_config,
                           model_dir=MODEL_DIR)
 
-weights_path = '/gluster/home/sdevaramani/Thesis/refactor/logs/ycb20201113T0254/mask_rcnn_ycb_0050.h5'
+weights_path = '/gluster/home/sdevaramani/Thesis/refactor/versions/binary_cross_entropy_logs/ycb20201201T1652/mask_rcnn_ycb_0080.h5'
 model.load_weights(weights_path, by_name=True)
 
 image_ids = np.random.choice(dataset_val.image_ids, 10)
@@ -73,7 +73,7 @@ for image_id in image_ids:
     # Compute AP
     AP, precisions, recalls, overlaps =\
         utils.compute_ap(gt_bbox, gt_class_id, gt_mask,
-                         r["rois"], r["class_ids"], r["scores"], r['masks'])
+                         r["rois"], r["class_ids"], r["scores"], r['r_masks'])
     APs.append(AP)
     
 print("mAP: ", np.mean(APs))

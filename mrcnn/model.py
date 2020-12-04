@@ -11,6 +11,7 @@ import os
 import random
 import datetime
 import re
+import sys
 import cv2
 import math
 import logging
@@ -522,13 +523,14 @@ def detection_targets_graph(proposals, gt_class_ids, gt_boxes, gt_masks, config)
                                    name="trim_gt_class_ids")
     
     indices = tf.where(non_zeros)[:, 0]
-    first_idx = tf.map_fn(lambda x: x*2, indices, dtype=tf.int64)
-    second_idx = tf.map_fn(lambda x: x*2 + 1, indices, dtype=tf.int64)
-    #third_idx = tf.map_fn(lambda x: x*3 + 2, indices, dtype=tf.int64)
-    final_indices = K.flatten(tf.stack([first_idx, second_idx], axis=1))
+    first_idx = tf.map_fn(lambda x: x*3, indices, dtype=tf.int64)
+    second_idx = tf.map_fn(lambda x: x*3 + 1, indices, dtype=tf.int64)
+    third_idx = tf.map_fn(lambda x: x*3 + 2, indices, dtype=tf.int64)
+    final_indices = K.flatten(tf.stack([first_idx, second_idx, third_idx], axis=1))
     print('gt masks in detection graph', gt_masks)
     gt_masks = tf.gather(gt_masks, final_indices, axis=2, name="trim_gt_masks")
     
+    tf.print(gt_masks.shape, output_stream=sys.stderr)
     # Handle COCO crowds
     # A crowd box in COCO is a bounding box around several instances. Exclude
     # them from training. A crowd box is given a negative class ID.
@@ -539,10 +541,10 @@ def detection_targets_graph(proposals, gt_class_ids, gt_boxes, gt_masks, config)
     gt_boxes = tf.gather(gt_boxes, non_crowd_ix)
 
  
-    first_idx = tf.map_fn(lambda x: x*2, non_crowd_ix, dtype=tf.int64)
-    second_idx = tf.map_fn(lambda x: x*2 + 1, non_crowd_ix, dtype=tf.int64)
-    #third_idx = tf.map_fn(lambda x: x*3 + 2, non_crowd_ix, dtype=tf.int64)
-    final_indices = K.flatten(tf.stack([first_idx, second_idx], axis=1))
+    first_idx = tf.map_fn(lambda x: x*3, non_crowd_ix, dtype=tf.int64)
+    second_idx = tf.map_fn(lambda x: x*3 + 1, non_crowd_ix, dtype=tf.int64)
+    third_idx = tf.map_fn(lambda x: x*3 + 2, non_crowd_ix, dtype=tf.int64)
+    final_indices = K.flatten(tf.stack([first_idx, second_idx, third_idx], axis=1))
     gt_masks = tf.gather(gt_masks, final_indices, axis=2)
     
     # Compute overlaps matrix [proposals, gt_boxes]
@@ -593,10 +595,10 @@ def detection_targets_graph(proposals, gt_class_ids, gt_boxes, gt_masks, config)
     # Permute masks to [N, height, width, 1]
     transposed_masks = tf.expand_dims(tf.transpose(gt_masks, [2, 0, 1]), -1)
     # Pick the right mask for each ROI
-    first_idx = tf.map_fn(lambda x: x*2, roi_gt_box_assignment, dtype=tf.int64)
-    second_idx = tf.map_fn(lambda x: x*2 + 1, roi_gt_box_assignment, dtype=tf.int64)
-    #third_idx = tf.map_fn(lambda x: x*3 + 2, roi_gt_box_assignment, dtype=tf.int64)
-    final_indices = K.flatten(tf.stack([first_idx, second_idx], axis=1))
+    first_idx = tf.map_fn(lambda x: x*3, roi_gt_box_assignment, dtype=tf.int64)
+    second_idx = tf.map_fn(lambda x: x*3 + 1, roi_gt_box_assignment, dtype=tf.int64)
+    third_idx = tf.map_fn(lambda x: x*3 + 2, roi_gt_box_assignment, dtype=tf.int64)
+    final_indices = K.flatten(tf.stack([first_idx, second_idx, third_idx], axis=1))
     roi_masks = tf.gather(transposed_masks, final_indices)
     print('roi masks............', roi_masks)
     # Compute mask targets
@@ -623,7 +625,7 @@ def detection_targets_graph(proposals, gt_class_ids, gt_boxes, gt_masks, config)
     masks = tf.squeeze(masks, axis=3)
     # Threshold mask pixels at 0.5 to have GT masks be 0 or 1 to use with
     # binary cross entropy loss.
-    masks = tf.round(masks)
+    #masks = tf.round(masks)
 
     # Append negative ROIs and pad bbox deltas and masks that
     # are not used for negative ROIs with zeros.
@@ -1023,66 +1025,89 @@ def build_fpn_mask_graph(rois, feature_maps, image_meta,
                                 name="r_mrcnn_mask_conv1")(x)
     g_mask = KL.TimeDistributed(KL.Conv2D(256, (3, 3), padding="same"),
                                 name="g_mrcnn_mask_conv1")(x)
+    b_mask = KL.TimeDistributed(KL.Conv2D(256, (3, 3), padding="same"),
+                                name="b_mrcnn_mask_conv1")(x)
     
     r_mask = KL.TimeDistributed(BatchNorm(),
                                 name='r_mrcnn_mask_bn1')(r_mask, training=train_bn)
     g_mask = KL.TimeDistributed(BatchNorm(),
                                 name='g_mrcnn_mask_bn1')(g_mask, training=train_bn)
+    b_mask = KL.TimeDistributed(BatchNorm(),
+                                name='b_mrcnn_mask_bn1')(b_mask, training=train_bn)
     
     r_mask = KL.Activation('relu')(r_mask)
     g_mask = KL.Activation('relu')(g_mask)
+    b_mask = KL.Activation('relu')(b_mask)
 
     r_mask = KL.TimeDistributed(KL.Conv2D(256, (3, 3), padding="same"),
                                 name="r_mrcnn_mask_conv2")(r_mask)
     g_mask = KL.TimeDistributed(KL.Conv2D(256, (3, 3), padding="same"),
                                 name="g_mrcnn_mask_conv2")(g_mask)
+    b_mask = KL.TimeDistributed(KL.Conv2D(256, (3, 3), padding="same"),
+                                name="b_mrcnn_mask_conv2")(b_mask)
     
     r_mask = KL.TimeDistributed(BatchNorm(),
                                 name='r_mrcnn_mask_bn2')(r_mask, training=train_bn)
     g_mask = KL.TimeDistributed(BatchNorm(),
                                 name='g_mrcnn_mask_bn2')(g_mask, training=train_bn)
+    b_mask = KL.TimeDistributed(BatchNorm(),
+                                name='b_mrcnn_mask_bn2')(b_mask, training=train_bn)
+    
     r_mask = KL.Activation('relu')(r_mask)
     g_mask = KL.Activation('relu')(g_mask)
-
+    b_mask = KL.Activation('relu')(b_mask)
+    
     r_mask = KL.TimeDistributed(KL.Conv2D(256, (3, 3), padding="same"),
                                 name="r_mrcnn_mask_conv3")(r_mask)
     g_mask = KL.TimeDistributed(KL.Conv2D(256, (3, 3), padding="same"),
                                 name="g_mrcnn_mask_conv3")(g_mask)
-
+    b_mask = KL.TimeDistributed(KL.Conv2D(256, (3, 3), padding="same"),
+                                name="b_mrcnn_mask_conv3")(b_mask)
+    
     r_mask = KL.TimeDistributed(BatchNorm(),
                                 name='r_mrcnn_mask_bn3')(r_mask, training=train_bn)
     g_mask = KL.TimeDistributed(BatchNorm(),
                                 name='g_mrcnn_mask_bn3')(g_mask, training=train_bn)
-
+    b_mask = KL.TimeDistributed(BatchNorm(),
+                                name='b_mrcnn_mask_bn3')(b_mask, training=train_bn)
+    
     r_mask = KL.Activation('relu')(r_mask)
     g_mask = KL.Activation('relu')(g_mask)
-
+    b_mask = KL.Activation('relu')(b_mask)
+    
     r_mask = KL.TimeDistributed(KL.Conv2D(256, (3, 3), padding="same"),
                                 name="r_mrcnn_mask_conv4")(r_mask)
     g_mask = KL.TimeDistributed(KL.Conv2D(256, (3, 3), padding="same"),
                                 name="g_mrcnn_mask_conv4")(g_mask)
-
+    b_mask = KL.TimeDistributed(KL.Conv2D(256, (3, 3), padding="same"),
+                                name="b_mrcnn_mask_conv4")(b_mask)
+    
     r_mask = KL.TimeDistributed(BatchNorm(),
                                 name='r_mrcnn_mask_bn4')(r_mask, training=train_bn)
     g_mask = KL.TimeDistributed(BatchNorm(),
                                 name='g_mrcnn_mask_bn4')(g_mask, training=train_bn)
+    b_mask = KL.TimeDistributed(BatchNorm(),
+                                name='b_mrcnn_mask_bn4')(b_mask, training=train_bn)
     
     r_mask = KL.Activation('relu')(r_mask)
     g_mask = KL.Activation('relu')(g_mask)
-
+    b_mask = KL.Activation('relu')(b_mask)
+    
     r_mask = KL.TimeDistributed(KL.Conv2DTranspose(256, (2, 2), strides=2, activation="relu"),
                                 name="r_mrcnn_mask_deconv")(r_mask)
     g_mask = KL.TimeDistributed(KL.Conv2DTranspose(256, (2, 2), strides=2, activation="relu"),
                                 name="g_mrcnn_mask_deconv")(g_mask)
+    b_mask = KL.TimeDistributed(KL.Conv2DTranspose(256, (2, 2), strides=2, activation="relu"),
+                                name="b_mrcnn_mask_deconv")(b_mask)
     
     r_mask = KL.TimeDistributed(KL.Conv2D(num_classes, (1, 1), strides=1, activation="sigmoid"),
                                 name="r_mrcnn_mask")(r_mask)
     g_mask = KL.TimeDistributed(KL.Conv2D(num_classes, (1, 1), strides=1, activation="sigmoid"),
                                 name="g_mrcnn_mask")(g_mask)
-    #b = KL.TimeDistributed(KL.Conv2D(num_classes, (1, 1), strides=1, activation="sigmoid"),
-    #                       name="b_mrcnn_mask")(x)
+    b_mask = KL.TimeDistributed(KL.Conv2D(num_classes, (1, 1), strides=1, activation="sigmoid"),
+                                name="b_mrcnn_mask")(b_mask)
 
-    return r_mask, g_mask
+    return r_mask, g_mask, b_mask
 
 
 ############################################################
@@ -1247,7 +1272,7 @@ def mrcnn_r_mask_loss_graph(target_masks, target_class_ids, pred_masks):
     # the class specific mask of each ROI.
     positive_ix = tf.where(target_class_ids > 0)[:, 0]
 
-    first_ix = tf.map_fn(lambda x: x*2, positive_ix, dtype=tf.int64)
+    #first_ix = tf.map_fn(lambda x: x*3, positive_ix, dtype=tf.int64)
     #second_ix = tf.map_fn(lambda x: x*3 + 1, positive_ix, dtype=tf.int64)
     #third_ix = tf.map_fn(lambda x: x*3 + 2, positive_ix, dtype=tf.int64)
     #target_positive_ix = K.flatten(tf.stack([first_ix, second_ix, third_ix], axis=1))
@@ -1267,7 +1292,7 @@ def mrcnn_r_mask_loss_graph(target_masks, target_class_ids, pred_masks):
     # Gather the masks (predicted and true) that contribute to loss
     
     #(N, H, W)
-    y_true = tf.gather(target_masks, first_ix)
+    y_true = tf.gather(target_masks, positive_ix)
     #y_pred = tf.gather(pred_masks, positive_ix)
     #(N, H, W)
     y_pred = tf.gather_nd(pred_masks, indices)
@@ -1298,7 +1323,7 @@ def mrcnn_g_mask_loss_graph(target_masks, target_class_ids, pred_masks):
     positive_ix = tf.where(target_class_ids > 0)[:, 0]
 
     #first_ix = tf.map_fn(lambda x: x*3, positive_ix, dtype=tf.int64)
-    second_ix = tf.map_fn(lambda x: x*2 + 1, positive_ix, dtype=tf.int64)
+    second_ix = tf.map_fn(lambda x: x + 1, positive_ix, dtype=tf.int64)
     #third_ix = tf.map_fn(lambda x: x*3 + 2, positive_ix, dtype=tf.int64)
     #target_positive_ix = K.flatten(tf.stack([first_ix, second_ix, third_ix], axis=1))
     
@@ -1335,7 +1360,7 @@ def mrcnn_b_mask_loss_graph(target_masks, target_class_ids, pred_masks):
 
     #first_ix = tf.map_fn(lambda x: x*3, positive_ix, dtype=tf.int64)
     #second_ix = tf.map_fn(lambda x: x*3 + 1, positive_ix, dtype=tf.int64)
-    third_ix = tf.map_fn(lambda x: x*3 + 2, positive_ix, dtype=tf.int64)
+    third_ix = tf.map_fn(lambda x: x + 2, positive_ix, dtype=tf.int64)
     #target_positive_ix = K.flatten(tf.stack([first_ix, second_ix, third_ix], axis=1))
 
     positive_class_ids = tf.cast(
@@ -1350,10 +1375,10 @@ def mrcnn_b_mask_loss_graph(target_masks, target_class_ids, pred_masks):
     indices = tf.stack([positive_ix, positive_class_ids], axis=1)
     y_true = tf.gather(target_masks, third_ix)
     y_pred = tf.gather_nd(pred_masks, indices)
-    mse = K.mean(tf.keras.losses.MSE(y_true, y_pred))
-    #loss = K.binary_crossentropy(target=y_true, output=y_pred)
-    #loss = K.mean(loss)
-    return mse
+    #mse = K.mean(tf.keras.losses.MSE(y_true, y_pred))
+    loss = K.binary_crossentropy(target=y_true, output=y_pred)
+    loss = K.mean(loss)
+    return loss
 
 ############################################################
 #  Data Generator
@@ -2205,11 +2230,11 @@ class MaskRCNN():
                                      train_bn=config.TRAIN_BN,
                                      fc_layers_size=config.FPN_CLASSIF_FC_LAYERS_SIZE)
 
-            R_mrcnn_mask, G_mrcnn_mask = build_fpn_mask_graph(rois, mrcnn_feature_maps,
-                                                              input_image_meta,
-                                                              config.MASK_POOL_SIZE,
-                                                              config.NUM_CLASSES,
-                                                              train_bn=config.TRAIN_BN)
+            R_mrcnn_mask, G_mrcnn_mask, B_mrcnn_mask = build_fpn_mask_graph(rois, mrcnn_feature_maps,
+                                                                            input_image_meta,
+                                                                            config.MASK_POOL_SIZE,
+                                                                            config.NUM_CLASSES,
+                                                                            train_bn=config.TRAIN_BN)
 
             # TODO: clean up (use tf.identify if necessary)
             output_rois = KL.Lambda(lambda x: x * 1, name="output_rois")(rois)
@@ -2227,8 +2252,8 @@ class MaskRCNN():
                 [target_mask, target_class_ids, R_mrcnn_mask])
             g_mask_loss = KL.Lambda(lambda x: mrcnn_g_mask_loss_graph(*x), name="g_mrcnn_mask_loss")(
                             [target_mask, target_class_ids, G_mrcnn_mask])
-            #b_mask_loss = KL.Lambda(lambda x: mrcnn_b_mask_loss_graph(*x), name="b_mrcnn_mask_loss")(
-            #                [target_mask, target_class_ids, B_mrcnn_mask])
+            b_mask_loss = KL.Lambda(lambda x: mrcnn_b_mask_loss_graph(*x), name="b_mrcnn_mask_loss")(
+                            [target_mask, target_class_ids, B_mrcnn_mask])
 
             # Model
             inputs = [input_image, input_image_meta,
@@ -2236,9 +2261,9 @@ class MaskRCNN():
             if not config.USE_RPN_ROIS:
                 inputs.append(input_rois)
             outputs = [rpn_class_logits, rpn_class, rpn_bbox,
-                       mrcnn_class_logits, mrcnn_class, mrcnn_bbox, R_mrcnn_mask, G_mrcnn_mask,
+                       mrcnn_class_logits, mrcnn_class, mrcnn_bbox, R_mrcnn_mask, G_mrcnn_mask, B_mrcnn_mask,
                        rpn_rois, output_rois,
-                       rpn_class_loss, rpn_bbox_loss, class_loss, bbox_loss, r_mask_loss, g_mask_loss]
+                       rpn_class_loss, rpn_bbox_loss, class_loss, bbox_loss, r_mask_loss, g_mask_loss, b_mask_loss]
             model = KM.Model(inputs, outputs, name='mask_rcnn')
         else:
             # Network Heads
@@ -2257,15 +2282,15 @@ class MaskRCNN():
 
             # Create masks for detections
             detection_boxes = KL.Lambda(lambda x: x[..., :4])(detections)
-            R_mrcnn_mask, G_mrcnn_mask = build_fpn_mask_graph(detection_boxes, mrcnn_feature_maps,
-                                                              input_image_meta,
-                                                              config.MASK_POOL_SIZE,
-                                                              config.NUM_CLASSES,
-                                                              train_bn=config.TRAIN_BN)
+            R_mrcnn_mask, G_mrcnn_mask, B_mrcnn_mask = build_fpn_mask_graph(detection_boxes, mrcnn_feature_maps,
+                                                                            input_image_meta,
+                                                                            config.MASK_POOL_SIZE,
+                                                                            config.NUM_CLASSES,
+                                                                            train_bn=config.TRAIN_BN)
 
             model = KM.Model([input_image, input_image_meta, input_anchors],
                              [detections, mrcnn_class, mrcnn_bbox,
-                              R_mrcnn_mask, G_mrcnn_mask, rpn_rois, rpn_class, rpn_bbox],
+                              R_mrcnn_mask, G_mrcnn_mask, B_mrcnn_mask, rpn_rois, rpn_class, rpn_bbox],
                               name='mask_rcnn')
 
         # Add multi-GPU support.
@@ -2381,7 +2406,7 @@ class MaskRCNN():
         #self.keras_model.metrics_tensors = []
         loss_names = [
             "rpn_class_loss",  "rpn_bbox_loss",
-            "mrcnn_class_loss", "mrcnn_bbox_loss", "r_mrcnn_mask_loss", 'g_mrcnn_mask_loss']
+            "mrcnn_class_loss", "mrcnn_bbox_loss", "r_mrcnn_mask_loss", 'g_mrcnn_mask_loss', 'b_mrcnn_mask_loss']
         added_loss_name = []
         for name in loss_names:
             layer = self.keras_model.get_layer(name)
@@ -2633,7 +2658,7 @@ class MaskRCNN():
         windows = np.stack(windows)
         return molded_images, image_metas, windows
 
-    def unmold_detections(self, detections, r_mask, g_mask, original_image_shape,
+    def unmold_detections(self, detections, r_mask, g_mask, b_mask, original_image_shape,
                           image_shape, window):
         """Reformats the detections of one image from the format of the neural
         network output to a format suitable for use in the rest of the
@@ -2656,17 +2681,31 @@ class MaskRCNN():
         # Detections array is padded with zeros. Find the first class_id == 0.
         zero_ix = np.where(detections[:, 4] == 0)[0]
         N = zero_ix[0] if zero_ix.shape[0] > 0 else detections.shape[0]
-               
+        print('r_masks shape', r_mask.shape)      
+        
+        r_masks = np.reshape(r_mask, (-1, r_mask.shape[1], r_mask.shape[2], r_mask.shape[3]))
+        g_masks = np.reshape(g_mask, (-1, r_mask.shape[1], r_mask.shape[2], r_mask.shape[3]))
+        b_masks = np.reshape(b_mask, (-1, r_mask.shape[1], r_mask.shape[2], r_mask.shape[3]))
+        
+        #print('r_masks shape after reshape', r_masks.shape)
+        r_masks = np.transpose(r_masks, [0, 3, 1, 2])
+        g_masks = np.transpose(g_masks, [0, 3, 1, 2])
+        b_masks = np.transpose(b_masks, [0, 3, 1, 2])
+    
+        #print('after transpose...', r_masks.shape)
         # Extract boxes, class_ids, scores, and class-specific masks
         boxes = detections[:N, :4]
         class_ids = detections[:N, 4].astype(np.int32)
         scores = detections[:N, 5]
-        r_masks = r_mask[np.arange(N), :, :, class_ids]
-        g_masks = g_mask[np.arange(N), :, :, class_ids]
-        #b_masks = b_mask[np.arange(N), :, :, class_ids]
+        
+        r_masks = r_masks[np.arange(N), class_ids, :, :]
+        g_masks = g_masks[np.arange(N), class_ids, :, :]
+        b_masks = b_masks[np.arange(N), class_ids, :, :]
+
+        #print('after arange', r_masks.shape)
         #indices = [np.where(class_ids == i)[0][0] for i in class_ids]
         #mask_shape = mrcnn_mask.shape
-        #masks = np.transpose(mrcnn_mask, [0, 3, 1, 2])
+        #r_masks = np.transpose(mrcnn_mask, [0, 3, 1, 2])
         #stacked = []
         #for i in range(N):
         #    mask_id = class_ids[i] * 3
@@ -2697,29 +2736,29 @@ class MaskRCNN():
             scores = np.delete(scores, exclude_ix, axis=0)
             r_masks = np.delete(r_masks, exclude_ix, axis=0)
             g_masks = np.delete(g_masks, exclude_ix, axis=0)
-            #b_masks = np.delete(b_masks, exclude_ix, axis=0)
+            b_masks = np.delete(b_masks, exclude_ix, axis=0)
             N = class_ids.shape[0]
 
         # Resize masks to original image size and set boundary threshold.
-        r_full_masks, g_full_masks = [], []
+        r_full_masks, g_full_masks, b_full_masks = [], [], []
         #masks = np.transpose(masks)
         for i in range(N):
             # Convert neural network mask to full size mask
             #m_id = i*3
             r_full_mask = utils.unmold_mask(r_masks[i], boxes[i], original_image_shape)
             g_full_mask = utils.unmold_mask(g_masks[i], boxes[i], original_image_shape)
-            #b_full_mask = utils.unmold_mask(b_masks[i], boxes[i], original_image_shape)
+            b_full_mask = utils.unmold_mask(b_masks[i], boxes[i], original_image_shape)
             r_full_masks.append(r_full_mask)
             g_full_masks.append(g_full_mask)
-            #b_full_masks.append(b_full_mask)
+            b_full_masks.append(b_full_mask)
         r_full_masks = np.stack(r_full_masks, axis=-1)
         g_full_masks = np.stack(g_full_masks, axis=-1)
-        #b_full_masks = np.stack(b_full_masks, axis=-1)
+        b_full_masks = np.stack(b_full_masks, axis=-1)
         #full_masks = np.reshape(full_masks, (original_image_shape[0], original_image_shape[1], 3*N))
         #print('full masks shape .........', full_masks.shape)
         #    if full_masks else np.empty(original_image_shape[:2] + (0,))
 
-        return boxes, class_ids, scores, r_full_masks, g_full_masks
+        return boxes, class_ids, scores, r_full_masks, g_full_masks, b_full_masks
 
     def detect(self, images, verbose=0):
         """Runs the detection pipeline.
@@ -2762,14 +2801,14 @@ class MaskRCNN():
             log("image_metas", image_metas)
             log("anchors", anchors)
         # Run object detection
-        detections, _, _, r_mrcnn_mask, g_mrcnn_mask, _, _, _ =\
+        detections, _, _, r_mrcnn_mask, g_mrcnn_mask, b_mrcnn_mask, _, _, _ =\
             self.keras_model.predict([molded_images, image_metas, anchors], verbose=0)
         # Process detections
         results = []
         
         for i, image in enumerate(images):
-            final_rois, final_class_ids, final_scores, r_final_masks, g_final_masks =\
-                self.unmold_detections(detections[i], r_mrcnn_mask[i], g_mrcnn_mask[i],
+            final_rois, final_class_ids, final_scores, r_final_masks, g_final_masks, b_final_masks =\
+                self.unmold_detections(detections[i], r_mrcnn_mask[i], g_mrcnn_mask[i], b_mrcnn_mask[i],
                                        image.shape, molded_images[i].shape,
                                        windows[i])
             results.append({
@@ -2777,8 +2816,8 @@ class MaskRCNN():
                 "class_ids": final_class_ids,
                 "scores": final_scores,
                 "r_masks": r_final_masks,
-                "g_masks": g_final_masks
-                #"b_masks": b_mrcnn_mask
+                "g_masks": g_final_masks,
+                "b_masks": b_final_masks
             })
         return results
 
