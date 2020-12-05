@@ -73,9 +73,9 @@ def apply_mask(image, mask, color, alpha=0.5):
     """Apply the given mask to the image.
     """
     for c in range(3):
-        image[:, :, c] = np.where(mask == 1,
+        image[:, :, c] = np.where(mask > 0,
                                   image[:, :, c] *
-                                  (1 - alpha) + alpha * color[c] * 255,
+                                  (1 - alpha) + alpha * color[c]*255,
                                   image[:, :, c])
     return image
 
@@ -207,12 +207,13 @@ def display_rgb_instances(image, boxes, masks, class_ids, class_names,
             caption = captions[i]
         ax.text(x1, y1 + 8, caption,
                 color='w', size=11, backgroundcolor="none")
+        mask = masks[:, :, i]
         if show_mask:
-            # for i in range(masks.shape[2]):
-            # m_id = np.where(class_ids == i)[0][0] * 3
+            # masked_image = apply_mask(masked_image, mask, (1., 0., 0.))
+            # mask = np.stack([masks[:, :, i], masks[:, :, i], masks[:, :, i]], axis=2)
             m_id = i * 3
-            # mask = masks[i, :, :, :]
-            mask = masks[:, :, m_id:m_id+3]
+            # empty = np.zeros((image.shape[:2]))
+            mask = np.stack([masks[:, :, m_id], masks[:, :, m_id+1], masks[:, :, m_id+2]], axis=2).astype(np.uint8)
             # mask = masks[:, :, m_id:m_id+3]
             masked_image = cv2.add(masked_image, mask)
     ax.imshow(masked_image)
@@ -264,7 +265,9 @@ def display_test_instances(image, boxes, masks, class_ids, class_names,
             # m_id = i * 3
         #     # mask = masks[i, :, :, :]
         #     # mask = masks[:, :, i:i+3]
-            mask = masks[i]
+            # empty = np.zeros(image.shape[:2])
+            instance = masks[i]
+            mask = np.stack([instance[:, :, 0], instance[:, :, 1], instance[:, :, 2]], axis=2).astype(np.uint8)
             masked_image = cv2.add(masked_image, mask)
     ax.imshow(masked_image)
     if auto_show:
@@ -424,10 +427,12 @@ def display_rgb_top_masks(image, mask, class_ids, class_names, limit=4):
     # Generate images and titles
     for i in range(limit):
         class_id = top_ids[i] if i < len(top_ids) else -1
-        m_id = np.where(class_ids == class_id)[0][0] * 3
+        m_id = np.where(class_ids == class_id)[0][0]
+        # empty = np.zeros((image.shape[:2]))
         # m = mask[m_id, :, :, :]
         # m_id = np.where(class_ids == class_id)[0][0] * 3
-        m = mask[:, :, m_id:m_id+3]
+        m = mask[:, :, i]
+        # m = np.stack([mask[:, :, m_id], mask[:, :, m_id+1], empty], axis=2)
         # Pull masks of instances belonging to the same class.
         # m = mask[:, :, np.where(class_ids == class_id)[0]]
         # m = np.sum(m * np.arange(1, m.shape[-1] + 1), -1)

@@ -507,7 +507,27 @@ def resize_image(image, min_dim=None, max_dim=None, min_scale=None, mode="square
     return image.astype(image_dtype), window, scale, padding, crop
 
 
-def resize_mask(masks, scale, padding, crop=None):
+def resize_binary_mask(mask, scale, padding, crop=None):
+    """Resizes a mask using the given scale and padding.
+    Typically, you get the scale and padding from resize_image() to
+    ensure both, the image and the mask, are resized consistently.
+    scale: mask scaling factor
+    padding: Padding to add to the mask in the form
+            [(top, bottom), (left, right), (0, 0)]
+    """
+    # Suppress warning from scipy 0.13.0, the output shape of zoom() is
+    # calculated with round() instead of int()
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        mask = scipy.ndimage.zoom(mask, zoom=[scale, scale, 1], order=0)
+    if crop is not None:
+        y, x, h, w = crop
+        mask = mask[y:y + h, x:x + w]
+    else:
+        mask = np.pad(mask, padding, mode='constant', constant_values=0)
+    return mask
+
+def resize_rgb_mask(masks, scale, padding, crop=None):
     """Resizes a mask using the given scale and padding.
     Typically, you get the scale and padding from resize_image() to
     ensure both, the image and the mask, are resized consistently.
