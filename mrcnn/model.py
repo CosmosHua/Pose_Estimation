@@ -1540,7 +1540,7 @@ def load_image_gt(dataset, config, image_id, augment=False, augmentation=None,
     # print('masks in load image gt .....', masks[0].shape)
     # mask = np.stack(masks, axis=2)
     binary_mask = utils.resize_binary_mask(binary_mask, scale, padding, crop)
-    rgb_mask = utils.resize_rgb_mask(mask, scale, padding, crop)
+    rgb_mask = utils.resize_rgb_mask(rgb_mask, scale, padding, crop)
     # Random horizontal flips.
     # TODO: will be removed in a future update in favor of augmentation
     if augment:

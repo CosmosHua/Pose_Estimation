@@ -427,11 +427,11 @@ def display_rgb_top_masks(image, mask, class_ids, class_names, limit=4):
     # Generate images and titles
     for i in range(limit):
         class_id = top_ids[i] if i < len(top_ids) else -1
-        m_id = np.where(class_ids == class_id)[0][0]
+        m_id = np.where(class_ids == class_id)[0][0] * 3
         # empty = np.zeros((image.shape[:2]))
         # m = mask[m_id, :, :, :]
         # m_id = np.where(class_ids == class_id)[0][0] * 3
-        m = mask[:, :, i]
+        m = mask[:, :, m_id:m_id+3]
         # m = np.stack([mask[:, :, m_id], mask[:, :, m_id+1], empty], axis=2)
         # Pull masks of instances belonging to the same class.
         # m = mask[:, :, np.where(class_ids == class_id)[0]]
