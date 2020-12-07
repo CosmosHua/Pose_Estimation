@@ -24,7 +24,7 @@ from ycbv_loader import YCBVDataset
 
 # Directory to save logs and trained model
 MODEL_DIR = os.path.join(ROOT_DIR, "logs")
-data_path = '/gluster/home/sdevaramani/Thesis/50_images'
+data_path = '/gluster/home/sdevaramani/Thesis/randomized_data'
 
 
 class YCBVConfig(Config):
@@ -56,14 +56,14 @@ model = modellib.MaskRCNN(mode="inference",
                           config=inference_config,
                           model_dir=MODEL_DIR)
 
-weights_path = '/gluster/home/sdevaramani/Thesis/refactor/versions/binary_cross_entropy_logs/ycb20201201T1652/mask_rcnn_ycb_0080.h5'
+weights_path = '/gluster/home/sdevaramani/Thesis/refactor/versions/split_gt_masks_model/binary_logs/ycb20201206T2306/mask_rcnn_ycb_0071.h5'
 model.load_weights(weights_path, by_name=True)
 
 image_ids = np.random.choice(dataset_val.image_ids, 10)
 APs = []
 for image_id in image_ids:
     # Load image and ground truth data
-    image, image_meta, gt_class_id, gt_bbox, gt_mask =\
+    image, image_meta, gt_class_id, gt_bbox, gt_r_mask, gt_g_mask, gt_b_mask =\
         modellib.load_image_gt(dataset_val, inference_config,
                                image_id, use_mini_mask=False)
     molded_images = np.expand_dims(modellib.mold_image(image, inference_config), 0)
@@ -71,9 +71,9 @@ for image_id in image_ids:
     results = model.detect([image], verbose=0)
     r = results[0]
     # Compute AP
-    AP, precisions, recalls, overlaps =\
-        utils.compute_ap(gt_bbox, gt_class_id, gt_mask,
-                         r["rois"], r["class_ids"], r["scores"], r['r_masks'])
+    AP, precisions, recalls, r_overlaps, g_overlaps, b_overlaps =\
+        utils.compute_ap(gt_bbox, gt_class_id, gt_r_mask, gt_g_mask, gt_b_mask,
+                         r["rois"], r["class_ids"], r["scores"], r['r_masks'], r['g_masks'], r['b_masks'])
     APs.append(AP)
     
 print("mAP: ", np.mean(APs))

@@ -21,7 +21,7 @@ from ycbv_loader import YCBVDataset
 
 # Directory to save logs and trained model
 #MODEL_DIR = os.path.join(ROOT_DIR + '/Thesis', "logs")
-MODEL_DIR = '/gluster/home/sdevaramani/Thesis/refactor/versions/binary_cross_entropy_logs'
+MODEL_DIR = '../binary_logs'
 COCO_MODEL_PATH = '/gluster/home/sdevaramani/Thesis/weights/mask_rcnn_coco.h5'
 data_path = '/gluster/home/sdevaramani/Thesis/randomized_data'
 
@@ -70,15 +70,15 @@ elif init_with == "last":
 
 model.train(dataset_train, dataset_val, 
             learning_rate=config.LEARNING_RATE, 
-            epochs=3, 
+            epochs=40, 
             layers='heads')
 
 model.train(dataset_train, dataset_val,
             learning_rate=config.LEARNING_RATE,
-            epochs=5,
+            epochs=60,
             layers='4+')
 
 model.train(dataset_train, dataset_val, 
             learning_rate=config.LEARNING_RATE / 10,
-            epochs=10, 
+            epochs=80, 
             layers="all")

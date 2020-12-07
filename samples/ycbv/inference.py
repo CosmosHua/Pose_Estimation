@@ -20,7 +20,8 @@ from mrcnn import visualize
 from mrcnn.model import log
 from ycbv_loader import YCBVDataset
 # Directory to save logs and trained model
-MODEL_DIR = os.path.join(ROOT_DIR, "logs")
+#MODEL_DIR = os.path.join(ROOT_DIR, "logs")
+MODEL_DIR = '../binary_logs'
 data_path = '/gluster/home/sdevaramani/Thesis/randomized_data'
 
 class NumpyArrayEncoder(JSONEncoder):
@@ -69,18 +70,18 @@ model = modellib.MaskRCNN(mode="inference",
 # Load trained weights
 #print("Loading weights from ", model_path)
 
-weights_path = '/gluster/home/sdevaramani/Thesis/refactor/versions/binary_cross_entropy_logs/ycb20201203T1824/mask_rcnn_ycb_0010.h5'
+weights_path = '/gluster/home/sdevaramani/Thesis/refactor/versions/split_gt_masks_model/binary_logs/ycb20201206T2306/mask_rcnn_ycb_0073.h5'
 model.load_weights(weights_path, by_name=True)
 
 #model.load_weights(model_path, by_name=True)
 image_id = random.choice(dataset_val.image_ids)
-#image_id = 454
+#image_id = 360
 print('image id................', image_id)
-original_image, _, gt_class_ids, gt_bbox, gt_mask = modellib.load_image_gt(dataset_val, inference_config,
-                                                 image_id, use_mini_mask=False)
+original_image, _, gt_class_ids, gt_bbox, gt_r_mask, gt_g_mask, gt_b_mask = modellib.load_image_gt(dataset_val, inference_config,
+                                                                                                   image_id, use_mini_mask=False)
 
 print(gt_bbox)
-gt_data = {'rois': gt_bbox, 'class_ids':gt_class_ids, 'masks': gt_mask}
+gt_data = {'rois': gt_bbox, 'class_ids':gt_class_ids, 'gt_r_masks': gt_r_mask, 'gt_g_masks': gt_g_mask, 'gt_b_masks': gt_b_mask}
 cv2.imwrite('image.png', original_image)
 results = model.detect([original_image], verbose=1)
  
