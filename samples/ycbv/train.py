@@ -4,6 +4,8 @@ import random
 import math
 import re
 import time
+import json
+from json import JSONEncoder
 import numpy as np
 import cv2
 import tensorflow as tf
@@ -21,10 +23,16 @@ from ycbv_loader import YCBVDataset
 
 # Directory to save logs and trained model
 #MODEL_DIR = os.path.join(ROOT_DIR + '/Thesis', "logs")
-MODEL_DIR = '../binary_logs'
+MODEL_DIR = '../mse_logs/for_10k_data/overfit'
 COCO_MODEL_PATH = '/gluster/home/sdevaramani/Thesis/weights/mask_rcnn_coco.h5'
-data_path = '/gluster/home/sdevaramani/Thesis/randomized_data'
+data_path = '/gluster/home/sdevaramani/Thesis/10k_data'
 
+
+class NumpyArrayEncoder(JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return JSONEncoder.default(self, obj)
 
 class YCBVConfig(Config):
     # Give the configuration a recognizable name
@@ -37,10 +45,11 @@ class YCBVConfig(Config):
     #RPN_ANCHOR_SCALES = (64, 128, 256, 512, 1024)
     #TRAIN_ROIS_PER_IMAGE = 32
     STEPS_PER_EPOCH = 1000
-    VALIDATION_STEPS = 500
+    VALIDATION_STEPS = 50
 
 config = YCBVConfig()
 
+#config.display()
 # Training dataset
 dataset_train = YCBVDataset(data_path, split='train')
 dataset_train.load_ycbv()
@@ -75,10 +84,10 @@ model.train(dataset_train, dataset_val,
 
 model.train(dataset_train, dataset_val,
             learning_rate=config.LEARNING_RATE,
-            epochs=60,
+            epochs=80,
             layers='4+')
 
 model.train(dataset_train, dataset_val, 
             learning_rate=config.LEARNING_RATE / 10,
-            epochs=80, 
+            epochs=160, 
             layers="all")

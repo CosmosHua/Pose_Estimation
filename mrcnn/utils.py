@@ -756,9 +756,9 @@ def compute_matches(gt_boxes, gt_class_ids, gt_r_masks, gt_g_masks, gt_b_masks,
     # Trim zero padding
     # TODO: cleaner to do zero unpadding upstream
     gt_boxes = trim_zeros(gt_boxes)
-    gt_r_masks = gt_r_masks[..., :gt_boxes.shape[0]]
-    gt_g_masks = gt_g_masks[..., :gt_boxes.shape[0]]
-    gt_b_masks = gt_b_masks[..., :gt_boxes.shape[0]]
+    #gt_r_masks = gt_r_masks[..., :gt_boxes.shape[0]]
+    #gt_g_masks = gt_g_masks[..., :gt_boxes.shape[0]]
+    #gt_b_masks = gt_b_masks[..., :gt_boxes.shape[0]]
 
     pred_boxes = trim_zeros(pred_boxes)
     pred_scores = pred_scores[:pred_boxes.shape[0]]
@@ -767,15 +767,17 @@ def compute_matches(gt_boxes, gt_class_ids, gt_r_masks, gt_g_masks, gt_b_masks,
     pred_boxes = pred_boxes[indices]
     pred_class_ids = pred_class_ids[indices]
     pred_scores = pred_scores[indices]
-    pred_r_masks = pred_r_masks[..., indices]
-    pred_g_masks = pred_g_masks[..., indices]
-    pred_b_masks = pred_b_masks[..., indices]
+    #pred_r_masks = pred_r_masks[..., indices]
+    #pred_g_masks = pred_g_masks[..., indices]
+    #pred_b_masks = pred_b_masks[..., indices]
 
     # Compute IoU overlaps [pred_masks, gt_masks]
-    r_overlaps = compute_overlaps_masks(pred_r_masks, gt_r_masks)
-    g_overlaps = compute_overlaps_masks(pred_g_masks, gt_g_masks)
-    b_overlaps = compute_overlaps_masks(pred_b_masks, gt_b_masks)
-    
+    #r_overlaps = compute_overlaps_masks(pred_r_masks, gt_r_masks)
+    #g_overlaps = compute_overlaps_masks(pred_g_masks, gt_g_masks)
+    #b_overlaps = compute_overlaps_masks(pred_b_masks, gt_b_masks)
+    overlaps = compute_overlaps(pred_boxes, gt_boxes)
+    #print('r overlaps...', r_overlaps)
+    #print('g overlaps...', g_overlaps)
     # Loop through predictions and find matching ground truth boxes
     match_count = 0
     pred_match = -1 * np.ones([pred_boxes.shape[0]])
@@ -783,9 +785,9 @@ def compute_matches(gt_boxes, gt_class_ids, gt_r_masks, gt_g_masks, gt_b_masks,
     for i in range(len(pred_boxes)):
         # Find best matching ground truth box
         # 1. Sort matches by score
-        sorted_ixs = np.argsort(r_overlaps[i])[::-1]
+        sorted_ixs = np.argsort(overlaps[i])[::-1]
         # 2. Remove low scores
-        low_score_idx = np.where(r_overlaps[i, sorted_ixs] < score_threshold)[0]
+        low_score_idx = np.where(overlaps[i, sorted_ixs] < score_threshold)[0]
         if low_score_idx.size > 0:
             sorted_ixs = sorted_ixs[:low_score_idx[0]]
         # 3. Find the match
@@ -794,7 +796,7 @@ def compute_matches(gt_boxes, gt_class_ids, gt_r_masks, gt_g_masks, gt_b_masks,
             if gt_match[j] > -1:
                 continue
             # If we reach IoU smaller than the threshold, end the loop
-            iou = r_overlaps[i, j]
+            iou = overlaps[i, j]
             if iou < iou_threshold:
                 break
             # Do we have a match?
@@ -804,7 +806,7 @@ def compute_matches(gt_boxes, gt_class_ids, gt_r_masks, gt_g_masks, gt_b_masks,
                 pred_match[i] = j
                 break
 
-    return gt_match, pred_match, r_overlaps, g_overlaps, b_overlaps
+    return gt_match, pred_match, overlaps
 
 
 def compute_ap(gt_boxes, gt_class_ids, gt_r_masks, gt_g_masks, gt_b_masks,
@@ -819,7 +821,7 @@ def compute_ap(gt_boxes, gt_class_ids, gt_r_masks, gt_g_masks, gt_b_masks,
     overlaps: [pred_boxes, gt_boxes] IoU overlaps.
     """
     # Get matches and overlaps
-    gt_match, pred_match, r_overlaps, g_overlaps, b_overlaps = compute_matches(
+    gt_match, pred_match, overlaps = compute_matches(
         gt_boxes, gt_class_ids, gt_r_masks, gt_g_masks, gt_b_masks,
         pred_boxes, pred_class_ids, pred_scores, pred_r_masks, pred_g_masks,
         pred_b_masks, iou_threshold)
@@ -843,11 +845,11 @@ def compute_ap(gt_boxes, gt_class_ids, gt_r_masks, gt_g_masks, gt_b_masks,
     mAP = np.sum((recalls[indices] - recalls[indices - 1]) *
                  precisions[indices])
 
-    return mAP, precisions, recalls, r_overlaps, g_overlaps, b_overlaps
+    return mAP, precisions, recalls, overlaps
 
 
-def compute_ap_range(gt_box, gt_class_id, gt_mask,
-                     pred_box, pred_class_id, pred_score, pred_mask,
+def compute_ap_range(gt_box, gt_class_id, gt_r_mask, gt_g_mask, gt_b_mask,
+                     pred_box, pred_class_id, pred_score, pred_r_mask, pred_g_mask, pred_b_mask,
                      iou_thresholds=None, verbose=1):
     """Compute AP over a range or IoU thresholds. Default range is 0.5-0.95."""
     # Default is 0.5 to 0.95 with increments of 0.05
@@ -857,8 +859,8 @@ def compute_ap_range(gt_box, gt_class_id, gt_mask,
     AP = []
     for iou_threshold in iou_thresholds:
         ap, precisions, recalls, overlaps =\
-            compute_ap(gt_box, gt_class_id, gt_mask,
-                        pred_box, pred_class_id, pred_score, pred_mask,
+            compute_ap(gt_box, gt_class_id, gt_r_mask, gt_g_mask, gt_b_mask,
+                        pred_box, pred_class_id, pred_score, pred_r_mask, pred_g_mask, pred_b_mask,
                         iou_threshold=iou_threshold)
         if verbose:
             print("AP @{:.2f}:\t {:.3f}".format(iou_threshold, ap))

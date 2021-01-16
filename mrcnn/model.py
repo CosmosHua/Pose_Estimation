@@ -1434,11 +1434,11 @@ def mrcnn_r_mask_loss_graph(target_masks, target_class_ids, pred_masks):
     #loss = K.switch(tf.size(y_true) > 0,
     #                K.binary_crossentropy(target=y_true, output=y_pred),
     #                tf.constant(0.0))
-    #mse = K.mean(tf.keras.losses.MSE(y_true, y_pred))
+    mse = K.mean(tf.keras.losses.MSE(y_true, y_pred))
     #l1_loss = K.mean(smooth_l1_loss(y_true=y_true, y_pred=y_pred))
-    loss = K.binary_crossentropy(target=y_true, output=y_pred)
-    loss = K.mean(loss)
-    return loss
+    #loss = K.binary_crossentropy(target=y_true, output=y_pred)
+    #loss = K.mean(loss)
+    return mse
 
 def mrcnn_g_mask_loss_graph(target_masks, target_class_ids, pred_masks):
     target_class_ids = K.reshape(target_class_ids, (-1,))
@@ -1471,10 +1471,10 @@ def mrcnn_g_mask_loss_graph(target_masks, target_class_ids, pred_masks):
     indices = tf.stack([positive_ix, positive_class_ids], axis=1)
     y_true = tf.gather(target_masks, positive_ix)
     y_pred = tf.gather_nd(pred_masks, indices)
-    #mse = K.mean(tf.keras.losses.MSE(y_true, y_pred))
-    loss = K.binary_crossentropy(target=y_true, output=y_pred)
-    loss = K.mean(loss)
-    return loss
+    mse = K.mean(tf.keras.losses.MSE(y_true, y_pred))
+    #loss = K.binary_crossentropy(target=y_true, output=y_pred)
+    #loss = K.mean(loss)
+    return mse
 
 
 def mrcnn_b_mask_loss_graph(target_masks, target_class_ids, pred_masks):
@@ -1506,10 +1506,10 @@ def mrcnn_b_mask_loss_graph(target_masks, target_class_ids, pred_masks):
     indices = tf.stack([positive_ix, positive_class_ids], axis=1)
     y_true = tf.gather(target_masks, positive_ix)
     y_pred = tf.gather_nd(pred_masks, indices)
-    #mse = K.mean(tf.keras.losses.MSE(y_true, y_pred))
-    loss = K.binary_crossentropy(target=y_true, output=y_pred)
-    loss = K.mean(loss)
-    return loss
+    mse = K.mean(tf.keras.losses.MSE(y_true, y_pred))
+    #loss = K.binary_crossentropy(target=y_true, output=y_pred)
+    #loss = K.mean(loss)
+    return mse
 
 ############################################################
 #  Data Generator
@@ -2749,6 +2749,8 @@ class MaskRCNN():
                                         histogram_freq=0, write_graph=True, write_images=False),
             tf.keras.callbacks.ModelCheckpoint(self.checkpoint_path,
                                             verbose=0, save_weights_only=True),
+            #tf.keras.callbacks.EarlyStopping(monitor='r_mrcnn_mask_loss', patience=3),
+            #tf.keras.callbacks.ReduceLROnPlateau(monitor='loss', patience=3),
         ]
 
         # Add custom callbacks to the list
@@ -2845,26 +2847,28 @@ class MaskRCNN():
         # Detections array is padded with zeros. Find the first class_id == 0.
         zero_ix = np.where(detections[:, 4] == 0)[0]
         N = zero_ix[0] if zero_ix.shape[0] > 0 else detections.shape[0]
-        print('r_masks shape', r_mask.shape)      
         
-        r_masks = np.reshape(r_mask, (-1, r_mask.shape[1], r_mask.shape[2], r_mask.shape[3]))
-        g_masks = np.reshape(g_mask, (-1, r_mask.shape[1], r_mask.shape[2], r_mask.shape[3]))
-        b_masks = np.reshape(b_mask, (-1, r_mask.shape[1], r_mask.shape[2], r_mask.shape[3]))
+        
+        #r_masks = np.reshape(r_mask, (-1, r_mask.shape[1], r_mask.shape[2], r_mask.shape[3]))
+        #g_masks = np.reshape(g_mask, (-1, r_mask.shape[1], r_mask.shape[2], r_mask.shape[3]))
+        #b_masks = np.reshape(b_mask, (-1, r_mask.shape[1], r_mask.shape[2], r_mask.shape[3]))
         
         #print('r_masks shape after reshape', r_masks.shape)
-        r_masks = np.transpose(r_masks, [0, 3, 1, 2])
-        g_masks = np.transpose(g_masks, [0, 3, 1, 2])
-        b_masks = np.transpose(b_masks, [0, 3, 1, 2])
+        #r_masks = np.transpose(r_masks, [0, 3, 1, 2])
+        #g_masks = np.transpose(g_masks, [0, 3, 1, 2])
+        #b_masks = np.transpose(b_masks, [0, 3, 1, 2])
     
         #print('after transpose...', r_masks.shape)
         # Extract boxes, class_ids, scores, and class-specific masks
         boxes = detections[:N, :4]
         class_ids = detections[:N, 4].astype(np.int32)
         scores = detections[:N, 5]
-        
-        r_masks = r_masks[np.arange(N), class_ids, :, :]
-        g_masks = g_masks[np.arange(N), class_ids, :, :]
-        b_masks = b_masks[np.arange(N), class_ids, :, :]
+        r_masks = r_mask[np.arange(N), :, :, class_ids]
+        g_masks = g_mask[np.arange(N), :, :, class_ids]
+        b_masks = b_mask[np.arange(N), :, :, class_ids]
+        #r_masks = r_masks[np.arange(N), class_ids, :, :]
+        #g_masks = g_masks[np.arange(N), class_ids, :, :]
+        #b_masks = b_masks[np.arange(N), class_ids, :, :]
 
         #print('after arange', r_masks.shape)
         #indices = [np.where(class_ids == i)[0][0] for i in class_ids]

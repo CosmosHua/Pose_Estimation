@@ -216,9 +216,10 @@ def display_rgb_instances(image, boxes, masks, class_ids, class_names,
             mask = np.stack([masks[:, :, m_id], masks[:, :, m_id+1], masks[:, :, m_id+2]], axis=2).astype(np.uint8)
             # mask = masks[:, :, m_id:m_id+3]
             masked_image = cv2.add(masked_image, mask)
-    ax.imshow(masked_image)
-    if auto_show:
-        plt.show()
+    return masked_image
+    #ax.imshow(masked_image)
+    #if auto_show:
+    #    plt.show()
 
 
 def display_test_instances(image, boxes, masks, class_ids, class_names,

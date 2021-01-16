@@ -16,7 +16,7 @@ import mrcnn.model as modellib
 from ycbv_loader import YCBVDataset
 
 MODEL_DIR = os.path.join(ROOT_DIR, "logs")
-data_path = '/gluster/home/sdevaramani/Thesis/randomized_data'
+data_path = '/gluster/home/sdevaramani/Thesis/10k_data'
 
 
 class YCBVConfig(Config):
@@ -35,7 +35,7 @@ class InferenceConfig(YCBVConfig):
 
 inference_config = InferenceConfig()
 
-dataset_val = YCBVDataset(data_path, split='val')
+dataset_val = YCBVDataset(data_path, split='test')
 dataset_val.load_ycbv()
 dataset_val.prepare()
 
@@ -43,23 +43,28 @@ model = modellib.MaskRCNN(mode="inference",
                           config=inference_config,
                           model_dir=MODEL_DIR)
 
-weights_path = '/gluster/home/sdevaramani/Thesis/refactor/versions/split_gt_masks_model/binary_logs/ycb20201206T2306/mask_rcnn_ycb_0071.h5'
+weights_path = '/gluster/home/sdevaramani/Thesis/refactor/versions/mse_logs/for_10k_data/ycb20210110T1048/mask_rcnn_ycb_0090.h5'
 model.load_weights(weights_path, by_name=True)
 
-image_ids = np.random.choice(dataset_val.image_ids, 10)
+image_ids = np.random.choice(dataset_val.image_ids, 500)
+#image_ids = dataset_val.image_ids
 APs = []
 for image_id in image_ids:
     # Load image and ground truth data
     image, _, class_id, boxes, r_mask, g_mask, b_mask =\
         modellib.load_image_gt(dataset_val, inference_config,
                                image_id, use_mini_mask=False)
-    molded_images = np.expand_dims(modellib.mold_image(image, inference_config), 0)
+    #molded_images = np.expand_dims(modellib.mold_image(image, inference_config), 0)
     results = model.detect([image], verbose=0)
     r = results[0]
-    # Compute AP
-    AP, precisions, recalls, r_overlaps, g_overlaps, b_overlaps =\
-        utils.compute_ap(gt_bbox, class_id, r_mask, g_mask, b_mask,
-                         r['rois'], r['class_ids'], r['scores'], r['r_masks'], r['g_masks'], r['b_masks'])
-    APs.append(AP)
-    
-print("mAP: ", np.mean(APs))
+    # Compute AP over range
+    ap = utils.compute_ap_range(boxes, class_id, r_mask, g_mask, b_mask, r['rois'], 
+                                r['class_ids'], r['scores'], r['r_masks'], r['g_masks'], r['b_masks'], verbose=0)
+
+    #AP, precisions, recalls, overlaps =\
+    #    utils.compute_ap(boxes, class_id, r_mask, g_mask, b_mask,
+    #                     r['rois'], r['class_ids'], r['scores'], r['r_masks'], r['g_masks'], r['b_masks'])
+    APs.append(ap)
+
+#print("mAP: ", np.mean(APs))
+print("Mean AP over {} images: {:.4f}".format(len(APs), np.mean(APs)))

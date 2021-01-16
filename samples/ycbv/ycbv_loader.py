@@ -44,7 +44,7 @@ class YCBVDataset(utils.Dataset):
         class_names = self.get_class_names()
         for class_id in range(1, len(class_names)):
             self.add_class('ycb', class_id, class_names[class_id])
-        assert self.split in ['train', 'val']
+        assert self.split in ['train', 'val', 'test']
         images = {}
         images_dir = os.path.join(self.data_dir, self.split + '/rgb')
         for filename in os.listdir(images_dir):
