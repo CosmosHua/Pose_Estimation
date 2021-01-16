@@ -7,6 +7,7 @@ The build/compilations setup
 import pip
 import logging
 import pkg_resources
+from setuptools import find_packages
 try:
     from setuptools import setup
 except ImportError:
@@ -39,7 +40,7 @@ setup(
     author_email='waleed.abdulla@gmail.com',
     license='MIT',
     description='Mask R-CNN for object detection and instance segmentation',
-    packages=["mrcnn"],
+    packages=find_packages(),
     install_requires=install_reqs,
     include_package_data=True,
     python_requires='>=3.4',
