@@ -3,7 +3,7 @@ import cv2
 from mrcnn import utils
 
 
-class ShapesDataset(utils.Dataset):
+class Shapes(utils.Dataset):
     """Generates the shapes synthetic dataset
     """
 
