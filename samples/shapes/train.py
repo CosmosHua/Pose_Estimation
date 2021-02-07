@@ -2,15 +2,9 @@ import os
 import sys
 import random
 import math
-import re
 import time
 import numpy as np
 import cv2
-
-ROOT_DIR = os.path.abspath("../../")
-
-# Import Mask RCNN
-sys.path.append(ROOT_DIR)  # To find local version of the library
 from mrcnn.config import Config
 from mrcnn import utils
 import mrcnn.model as modellib
@@ -19,18 +13,14 @@ from mrcnn.model import log
 from shapes_loader import ShapesDataset
 
 # Directory to save logs and trained model
-#MODEL_DIR = os.path.join(ROOT_DIR + '/Thesis', "logs")
 MODEL_DIR = '/gluster/home/sdevaramani/Thesis'
 COCO_MODEL_PATH = '/gluster/home/sdevaramani/Thesis/weights/mask_rcnn_coco.h5'
 
 
 class ShapesConfig(Config):
     """Configuration for training on the toy shapes dataset.
-    Derives from the base Config class and overrides values specific
-    to the toy shapes dataset.
     """
-    # Give the configuration a recognizable name
-    NAME = "shapes"
+    NAME = 'shapes'
     GPU_COUNT = 1
     IMAGES_PER_GPU = 8
     NUM_CLASSES = 1 + 3  # background + 3 shapes
