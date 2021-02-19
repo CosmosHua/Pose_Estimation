@@ -49,4 +49,5 @@ Setting up:
     -s 'train/val/test
     ```
   - Generate ground-truth boxes for the augmented data
+  
     `python3 generate_groundtruth.py -dp 'path/to/saved/augmented/data' -s 'train/test/val'`
