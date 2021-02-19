@@ -40,9 +40,13 @@ Setting up:
    ```
   - Run renderer.py as: 
   ```
-  python3 renderer.py -mp 'path/to/object/models' -rp 'path/to/save/rendered/data' -s 'train/test/val' --num_objects 7 --sample_size data_size
+  python3 renderer.py -mp 'path/to/object/models' -rp 'path/to/save/rendered/data' 
+  -s 'train/test/val' --num_objects 7 --sample_size data_size
   ```
   - Now add background and augment data
-    `python3 data_augmentation.py -dp 'path/to/saved/rendered/data' -bp 'path/to/background/images' -s 'train/val/test`
+    ```
+    python3 data_augmentation.py -dp 'path/to/saved/rendered/data' -bp 'path/to/background/images' 
+    -s 'train/val/test
+    ```
   - Generate ground-truth boxes for the augmented data
     `python3 generate_groundtruth.py -dp 'path/to/saved/augmented/data' -s 'train/test/val'`
