@@ -51,3 +51,13 @@ Setting up:
   - Generate ground-truth boxes for the augmented data
   
     `python3 generate_groundtruth.py -dp 'path/to/saved/augmented/data' -s 'train/test/val'`
+    
+ * Step 3: Inspect data as in `inspect_data.ipynb` to verfiy the generated data
+ * Step 4: Before training the model, download `mask_rcnn_coco.h5` from this [link](https://github.com/matterport/Mask_RCNN/releases/download/v2.0/mask_rcnn_coco.h5) as we initialize weights with Mask RCNN trained for COCO.
+ * Step 5: Change the MODEL_DIR (path to save trained model), data_path (path to dataset) and COCO_MODEL_DIR (path to saved COCO weights) in `samples/ycbv/train` and run the script to start the training.
+ * Step 6: After training the model, run `samples/ycbv/inference.py` to run model inference and the results will be saved in your directory as `results.json`
+ * Step 7: To visualize the resulting bounding boxes and masks, run `inspect_inference.ipynb`.
+
+
+
+    `python3 samples/ycbv/train.py`
