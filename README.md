@@ -30,8 +30,13 @@ Setting up:
       | +-- images
     | +-- class_info.json
    Similar to Train/ directory create test and val inside /Data. Then copy the following into `class_info.json`
-   `{"00": "background", "01": "002_master_chef_can", "02": "003_cracker_box", "03": "004_sugar_box", "04": "005_tomato_soup_can", "05": "006_mustard_bottle", "06": "007_tuna_fish_can", "07": "008_pudding_box", "08": "009_gelatin_box", "09": "010_potted_meat_can", "10": "011_banana", "11": "019_pitcher_base", "12": "021_bleach_cleanser", "13": "024_bowl", "14": "025_mug", "15": "035_power_drill", "16": "036_wood_block", "17": "037_scissors", "18": "040_large_marker", "19": "051_large_clamp", "20": "052_extra_large_clamp", "21": "061_foam_brick"}`
-  - Run renderer.py as: `python3 renderer.py -mp 'path/to/object/models' -rp 'path/to/save/rendered/data' -s 'train/test/val' --num_objects 7 --sample_size data_size`
+   ```
+   {"00": "background", "01": "002_master_chef_can", "02": "003_cracker_box", "03": "004_sugar_box", "04": "005_tomato_soup_can", "05": "006_mustard_bottle", "06": "007_tuna_fish_can", "07": "008_pudding_box", "08": "009_gelatin_box", "09": "010_potted_meat_can", "10": "011_banana", "11": "019_pitcher_base", "12": "021_bleach_cleanser", "13": "024_bowl", "14": "025_mug", "15": "035_power_drill", "16": "036_wood_block", "17": "037_scissors", "18": "040_large_marker", "19": "051_large_clamp", "20": "052_extra_large_clamp", "21": "061_foam_brick"}
+   ```
+  - Run renderer.py as: 
+  ```
+  python3 renderer.py -mp 'path/to/object/models' -rp 'path/to/save/rendered/data' -s 'train/test/val' --num_objects 7 --sample_size data_size
+  ```
   - Now add background and augment data
     `python3 data_augmentation.py -dp 'path/to/saved/rendered/data' -bp 'path/to/background/images' -s 'train/val/test`
   - Generate ground-truth boxes for the augmented data
