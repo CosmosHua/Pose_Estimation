@@ -169,16 +169,12 @@ def display_instances(image, boxes, masks, class_ids, class_names,
 
 
 def display_rgb_instances(image, boxes, masks, class_ids, class_names,
-                      scores=None, title="",
-                      figsize=(16, 16), ax=None,
-                      show_mask=True, show_bbox=True,
-                      colors=None, captions=None):
-    # Number of instances
+                          scores=None, title="", figsize=(16, 16), ax=None,
+                          show_mask=True, show_bbox=True,
+                          colors=None, captions=None):
     N = boxes.shape[0]
-    auto_show = False
     if not ax:
         _, ax = plt.subplots(1, figsize=figsize)
-        auto_show = True
     # Generate random colors
     colors = colors or random_colors(N)
     height, width = image.shape[:2]
@@ -195,8 +191,8 @@ def display_rgb_instances(image, boxes, masks, class_ids, class_names,
         y1, x1, y2, x2 = boxes[i]
         if show_bbox:
             p = patches.Rectangle((x1, y1), x2 - x1, y2 - y1, linewidth=2,
-                                alpha=0.7, linestyle="dashed",
-                                edgecolor=color, facecolor='none')
+                                  alpha=0.7, linestyle="dashed",
+                                  edgecolor=color, facecolor='none')
             ax.add_patch(p)
         if not captions:
             class_id = class_ids[i]
@@ -209,17 +205,10 @@ def display_rgb_instances(image, boxes, masks, class_ids, class_names,
                 color='w', size=11, backgroundcolor="none")
         mask = masks[:, :, i]
         if show_mask:
-            # masked_image = apply_mask(masked_image, mask, (1., 0., 0.))
-            # mask = np.stack([masks[:, :, i], masks[:, :, i], masks[:, :, i]], axis=2)
             m_id = i * 3
-            # empty = np.zeros((image.shape[:2]))
             mask = np.stack([masks[:, :, m_id], masks[:, :, m_id+1], masks[:, :, m_id+2]], axis=2).astype(np.uint8)
-            # mask = masks[:, :, m_id:m_id+3]
             masked_image = cv2.add(masked_image, mask)
-    return masked_image
-    #ax.imshow(masked_image)
-    #if auto_show:
-    #    plt.show()
+    ax.imshow(masked_image)
 
 
 def display_test_instances(image, boxes, masks, class_ids, class_names,

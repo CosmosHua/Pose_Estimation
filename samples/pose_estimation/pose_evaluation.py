@@ -28,7 +28,6 @@ class PoseError():
 
     def transform_3d(self, rotations, translations):
         translations = translations.reshape((3, 1))
-        print(self.points3D.shape)
         transform_pts = rotations.dot(self.points3D.T) + translations
         return transform_pts.T
 

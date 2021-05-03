@@ -47,7 +47,8 @@ class Shapes(utils.Dataset):
         occlusion = np.logical_not(mask[:, :, -1]).astype(np.uint8)
         for i in range(count-2, -1, -1):
             mask[:, :, i] = mask[:, :, i] * occlusion
-            occlusion = np.logical_and(occlusion, np.logical_not(mask[:, :, i]))
+            occlusion = np.logical_and(occlusion,
+                                       np.logical_not(mask[:, :, i]))
         # Map class names to class IDs.
         class_ids = np.array([self.class_names.index(s[0]) for s in shapes])
         return mask.astype(np.bool), class_ids.astype(np.int32)
@@ -55,7 +56,8 @@ class Shapes(utils.Dataset):
     def draw_shape(self, image, shape, dims, color):
         X, Y, size = dims
         if shape == 'square':
-            cv2.rectangle(image, (X - size, Y - size), (X + size, Y + size), color, -1)
+            cv2.rectangle(image, (X - size, Y - size), (X + size, Y + size),
+                          color, -1)
         elif shape == 'circle':
             cv2.circle(image, (X, Y), size, color, -1)
         elif shape == 'triangle':
